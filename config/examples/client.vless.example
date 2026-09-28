@@ -1,0 +1,37 @@
+# VLESS REALITY client reference (direct IN inbound — not AWG)
+# Export scripts: scripts/clients/reality/ (not prod-validated yet)
+#
+# Required when ENABLE_XRAY_INBOUND=1 in .data/.env
+# Regenerate server keys: docker run --rm teddysun/xray:26.6.27 x25519
+
+################################################################################
+# Share link (v2rayN / v2rayNG / Hiddify — format may vary by app)
+################################################################################
+
+# vless://VLESS_UUID@IN_SERVER_IP:XRAY_INBOUND_PORT?encryption=none&security=reality&sni=REALITY_INBOUND_SERVER_NAME&fp=chrome&pbk=REALITY_PUBLIC_KEY&sid=REALITY_SHORT_ID&type=tcp#MyClient
+
+################################################################################
+# Minimal JSON client block (merged into config.json inbounds by make build)
+################################################################################
+
+# {
+#   "id": "YOUR_VLESS_UUID",
+#   "flow": "",
+#   "email": "client@example.com"
+# }
+
+################################################################################
+# Fields map to .data/.env
+################################################################################
+
+# | Client field | .env variable              |
+# |--------------|----------------------------|
+# | UUID         | VLESS_UUID (inbound)       |
+# | Address      | IN_INGRESS (public IPv4)   |
+# | Port         | XRAY_INBOUND_PORT          |
+# | SNI          | REALITY_INBOUND_SERVER_NAME|
+# | Public key   | REALITY_PUBLIC_KEY         |
+# | Short ID     | REALITY_SHORT_ID           |
+# | Dest (mask)  | REALITY_DEST               |
+
+# AWG clients use config/examples/client.conf.example instead.

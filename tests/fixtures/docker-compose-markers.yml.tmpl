@@ -1,0 +1,22 @@
+# Minimal compose template for unit tests (render_compose marker stripping).
+# Production uses config/templates/docker-compose.yml.tmpl via render-config.sh.
+services:
+  # >>> service: xray
+  xray:
+    image: xray
+  # <<< service: xray
+
+  # >>> service: amneziawg
+  amneziawg:
+    image: awg
+    depends_on:
+      # >>> needs: dns
+      dns:
+        condition: service_started
+      # <<< needs: dns
+  # <<< service: amneziawg
+
+  # >>> service: dns
+  dns:
+    image: dns:1
+  # <<< service: dns

@@ -1,0 +1,84 @@
+# Machine-readable catalog for tests/fixtures (see tests/unit/test_fixtures_contract.sh).
+version: 2
+
+paths:
+  - path: .gitkeep
+  - path: common/awg-docker-mock.sh
+  - path: common/curl-mock.sh
+  - path: common/docker-mock.sh
+  - path: common/openssl-mock.sh
+  - path: common/ss-mock.sh
+  - path: data/awg/awg0-with-peer.conf
+  - path: data/cases/verify-inbound/disabled-socks-loopback/.env
+  - path: data/cases/verify-inbound/disabled-socks-loopback/config.json
+  - path: data/cases/verify-inbound/disabled-socks-loopback/docker-compose.yml
+  - path: data/cases/verify-inbound/enabled-vless-443/.env
+  - path: data/cases/verify-inbound/enabled-vless-443/config.json
+  - path: data/cases/verify-inbound/enabled-vless-443/docker-compose.yml
+  - path: data/cases/verify-inbound/enabled-vless-8443/.env
+  - path: data/cases/verify-inbound/enabled-vless-8443/config.json
+  - path: data/cases/verify-inbound/enabled-vless-8443/docker-compose.yml
+  - path: data/cases/verify-inbound/fail-stale-compose-443/.env
+  - path: data/cases/verify-inbound/fail-stale-compose-443/config.json
+  - path: data/cases/verify-inbound/fail-stale-compose-443/docker-compose.yml
+  - path: data/cases/verify-inbound/fail-stale-vless-config/.env
+  - path: data/cases/verify-inbound/fail-stale-vless-config/config.json
+  - path: data/cases/verify-inbound/fail-stale-vless-config/docker-compose.yml
+  - path: data/cases/verify-inbound/ok-disabled-with-mtproxy-8444/.env
+  - path: data/cases/verify-inbound/ok-disabled-with-mtproxy-8444/config.json
+  - path: data/cases/verify-inbound/ok-disabled-with-mtproxy-8444/docker-compose.yml
+  - path: data/compose/teleproxy-stale.yml
+  - path: data/compose/teleproxy-standalone.yml
+  - path: data/compose/verify-sni-sni-mode.yml
+  - path: data/compose/xray-socks-only.yml
+  - path: data/env/disabled-mtproxy.env
+  - path: data/env/enabled-standalone.env
+  - path: data/env/render-legacy-ipv6.env
+  - path: data/env/render-out-exit-v4.env
+  - path: data/env/render-out-exit-v6.env
+  - path: data/env/sni-mode.env
+  - path: data/env/standalone-skip.env
+  - path: data/integration/stack-env-gw.env
+  - path: data/json/xray-inbound-sni.json
+  - path: data/json/xray-socks-only.json
+  - path: data/nginx/sni-map-bad.conf
+  - path: data/nginx/sni-map-good.conf
+  - path: data/nginx/sni-map-verify-good.conf
+  - path: data/openssl/dummy.pem
+  - path: data/preflight/phase-08-minimal.env
+  - path: docker-compose-markers.yml.tmpl
+  - path: ensure-boot/ensure-compose-mock.sh
+  - path: ensure-boot/ensure-docker-mock.sh
+  - path: ensure-boot/modprobe-mock.sh
+  - path: ensure-boot/rebuild-mock.sh
+  - path: ensure-boot/route-mock-fail.sh
+  - path: ensure-boot/route-mock.sh
+  - path: host-network/depmod-mock.sh
+  - path: host-network/docker-mock.sh
+  - path: host-network/ip-mock.sh
+  - path: host-network/iptables-mock.sh
+  - path: host-network/modprobe-mock.sh
+  - path: host-network/systemctl-mock.sh
+  - path: preflight-out/curl-mock.sh
+  - path: preflight-out/docker-mock.sh
+
+consumers:
+  - test_fixtures_contract
+  - test_verify_inbound
+  - test_render_out_exit
+  - test_images_pull_upstream
+  - test_host_network_remove
+  - test_host_remove_integration
+  - test_verify_sni
+  - test_verify_mtproxy
+  - test_mtproxy_sni
+  - test_mtproxy_smoke
+  - test_mtproxy_export
+  - test_preflight_mtproxy_port
+  - test_preflight_mtproxy_phase
+  - test_preflight_out
+  - test_awg_add_report
+  - test_awg_remove_confirm
+  - test_awg_remove_report
+  - test_ensure_boot_exit
+  - test_component_flags

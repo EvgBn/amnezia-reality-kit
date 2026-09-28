@@ -1,0 +1,45 @@
+# docker-compose service reference (rendered output shape)
+# Source of truth: config/templates/docker-compose.yml.tmpl + make build post-process
+#
+# This file is documentation only — do not docker compose -f this path.
+# Live stack: .data/build/docker-compose.yml
+
+name: vpn
+
+networks:
+  vpn:
+    name: vpn
+    driver: bridge
+    enable_ipv6: true
+    # ipam: DOCKER_NETWORK_SUBNET_IPV4 / _IPV6 from .data/.env
+
+services:
+  # SOCKS :1080 (loopback on host) + optional VLESS inbound + REALITY outbound to OUT
+  xray:
+    image: ${XRAY_IMAGE}              # default teddysun/xray:26.6.27
+    container_name: vpn-xray
+    # ports: 127.0.0.1:1080 + optional XRAY_INBOUND_PORT (apply-compose-xray-ports.sh)
+
+  # AWG tunnel + ipt2socks (TCP) + udp-relay (UDP NFQUEUE)
+  amneziawg:
+    image: amneziawg:${AMNEZIAWG_RELEASE}
+    container_name: vpn-amneziawg
+    # ports: 0.0.0.0:${AWG_PORT}:51820/udp
+
+  # DNS for AWG clients; upstream from COREDNS_UPSTREAM in .env → build/Corefile
+  coredns:
+    image: ${COREDNS_IMAGE}           # default coredns:1.11.1
+    container_name: vpn-coredns
+    volumes:
+      - ./Corefile:/Corefile:ro       # rendered from Corefile.tmpl
+
+  # Optional — stripped when ENABLE_MTPROXY=0 (compose markers + render_compose)
+  teleproxy:
+    image: ghcr.io/teleproxy/teleproxy:${TELEPROXY_VERSION}
+    container_name: vpn-teleproxy
+    # host ports injected by apply-compose-mtproxy.sh when enabled
+
+# volumes:
+#   teleproxy-data:   # only when ENABLE_MTPROXY=1
+
+# See: config/README.md, docs/ARCHITECTURE.md

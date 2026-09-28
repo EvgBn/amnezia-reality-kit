@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+while iptables -t nat -C OUTPUT -p tcp --dport 853 -j REDIRECT --to-port "${COREDNS_IPT2SOCKS_PORT}" 2>/dev/null; do
+  iptables -t nat -D OUTPUT -p tcp --dport 853 -j REDIRECT --to-port "${COREDNS_IPT2SOCKS_PORT}"
+done
+iptables -t nat -A OUTPUT -p tcp --dport 853 -j REDIRECT --to-port "${COREDNS_IPT2SOCKS_PORT}"
+
+exec ipt2socks -R -4 -T \
+  -b 127.0.0.1 \
+  -l "${COREDNS_IPT2SOCKS_PORT}" \
+  -s "${XRAY_IP}" \
+  -p "${SOCKS_PORT}" \
+  -a "${SOCKS_USER}" \
+  -k "${SOCKS_PASSWORD}" \
+  -n "${IPT2SOCKS_NOFILE_LIMIT}" \
+  -j "${IPT2SOCKS_THREADS}" \
+  -o "${IPT2SOCKS_UDP_TIMEOUT}"

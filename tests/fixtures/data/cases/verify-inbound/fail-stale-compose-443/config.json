@@ -1,0 +1,4 @@
+{
+  "inbounds": [{"protocol": "socks", "port": 1080}],
+  "outbounds": [{"tag": "exit", "settings": {"vnext": [{"address": "2001:db8::1", "port": 443}]}}]
+}

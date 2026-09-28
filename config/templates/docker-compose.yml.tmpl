@@ -1,0 +1,187 @@
+name: vpn
+
+networks:
+  vpn:
+    name: vpn
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: ${DOCKER_NETWORK_SUBNET_IPV4}
+          gateway: ${DOCKER_NETWORK_GATEWAY_IPV4}
+        - subnet: ${DOCKER_NETWORK_SUBNET_IPV6}
+          gateway: ${DOCKER_NETWORK_GATEWAY_IPV6}
+
+services:
+  xray:
+    image: ${XRAY_IMAGE}
+    container_name: vpn-xray
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE}"
+        max-file: "3"
+    networks:
+      vpn:
+        ipv4_address: ${XRAY_IP}
+        ipv6_address: ${XRAY_IPV6}
+    ports:
+      - "127.0.0.1:1080:1080/tcp"
+    volumes:
+      - ./config.json:/etc/xray/config.json:ro
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "pgrep", "xray"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  amneziawg:
+    build:
+      context: ../../containers/amneziawg
+      args:
+        AWG_TOOLS_REF: ${AWG_TOOLS_REF}
+    image: amneziawg:${AMNEZIAWG_RELEASE}
+    container_name: vpn-amneziawg
+    restart: unless-stopped
+    networks:
+      vpn:
+        ipv4_address: ${AMNEZIAWG_IP}
+        ipv6_address: ${AMNEZIAWG_IPV6}
+    ports:
+      - "0.0.0.0:${AWG_PORT}:51820/udp"
+    volumes:
+      - ./awg0.conf:/etc/awg/awg0.conf:ro
+      - ./ipt2socks-amneziawg-v4.sh:/etc/ipt2socks/v4.sh:ro
+      - ./ipt2socks-amneziawg-v6.sh:/etc/ipt2socks/v6.sh:ro
+      - ./udp-relay-run.sh:/etc/ipt2socks/udp-relay.sh:ro
+      - ./ipt2socks-ports.env:/etc/ipt2socks/ports.env:ro
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.conf.all.route_localnet=1
+      - net.ipv4.conf.all.rp_filter=0
+      - net.ipv4.conf.default.src_valid_mark=1
+      - net.ipv4.conf.default.route_localnet=1
+      - net.ipv4.conf.default.rp_filter=0
+      - net.ipv6.conf.all.forwarding=1
+    ulimits:
+      nofile:
+        soft: ${IPT2SOCKS_NOFILE_LIMIT}
+        hard: 16384
+    mem_limit: ${AMNEZIAWG_MEM_LIMIT}
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE}"
+        max-file: "${LOG_MAX_FILE}"
+    depends_on:
+      xray:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  coredns:
+    build:
+      context: ../../containers/coredns
+    image: ${COREDNS_IMAGE}
+    container_name: vpn-coredns
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE}"
+        max-file: "${LOG_MAX_FILE}"
+    networks:
+      vpn:
+        ipv4_address: ${COREDNS_IP}
+        ipv6_address: ${COREDNS_IPV6}
+    volumes:
+      - ./Corefile:/Corefile:ro
+      - ./ipt2socks-coredns.sh:/etc/ipt2socks/run.sh:ro
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - NET_BIND_SERVICE
+    ulimits:
+      nofile:
+        soft: ${IPT2SOCKS_NOFILE_LIMIT}
+        hard: 16384
+    mem_limit: ${COREDNS_MEM_LIMIT}
+    expose:
+      - "53/udp"
+      - "53/tcp"
+    depends_on:
+      xray:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # >>> service: teleproxy
+  teleproxy:
+    image: ghcr.io/teleproxy/teleproxy:${TELEPROXY_VERSION}
+    container_name: vpn-teleproxy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE}"
+        max-file: "${LOG_MAX_FILE}"
+    networks:
+      vpn:
+        ipv4_address: ${TELEPROXY_IP}
+        ipv6_address: ${TELEPROXY_IPV6}
+    environment:
+      SECRET: ${MTPROXY_SECRET}
+      PORT: ${MTPROXY_CONTAINER_PORT}
+      EXTERNAL_PORT: ${MTPROXY_EXTERNAL_PORT}
+      EXTERNAL_IP: ${IN_INGRESS_ADDR}
+      STATS_PORT: ${MTPROXY_STATS_PORT}
+      EE_DOMAIN: ${MTPROXY_EE_DOMAIN}
+      DIRECT_MODE: ${MTPROXY_DIRECT_MODE}
+      SOCKS5_PROXY: ${MTPROXY_SOCKS5_PROXY}
+      CONFIG_DOWNLOAD_PROXY: ${MTPROXY_CONFIG_DOWNLOAD_PROXY}
+      WORKERS: ${MTPROXY_WORKERS}
+      DC_PROBE_INTERVAL: ${MTPROXY_DC_PROBE_INTERVAL}
+    volumes:
+      - teleproxy-data:/opt/teleproxy/data
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: ${MTPROXY_MEM_LIMIT}
+    depends_on:
+      xray:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:${MTPROXY_STATS_PORT}/stats 2>/dev/null || curl -sf http://127.0.0.1:${MTPROXY_STATS_PORT}/stats >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+  # <<< service: teleproxy
+
+# >>> volume: teleproxy-data
+volumes:
+  teleproxy-data:
+# <<< volume: teleproxy-data

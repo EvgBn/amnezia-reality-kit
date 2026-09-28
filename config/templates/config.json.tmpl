@@ -1,0 +1,173 @@
+{
+  "log": {
+    "loglevel": "warning",
+    "access": "/dev/stdout"
+  },
+  "inbounds": [
+    {
+      "listen": "::",
+      "port": 1080,
+      "protocol": "socks",
+      "settings": {
+        "auth": "password",
+        "accounts": [
+          {
+            "user": "${SOCKS_USER}",
+            "pass": "${SOCKS_PASSWORD}"
+          }
+        ],
+        "udp": true
+      },
+      "tag": "socks-in"
+    },
+    {
+      "listen": "0.0.0.0",
+      "port": ${XRAY_INBOUND_PORT},
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "none",
+        "realitySettings": {
+          "show": false,
+          "dest": "${REALITY_DEST}",
+          "xver": 0,
+          "serverNames": [
+            "${REALITY_INBOUND_SERVER_NAME}"
+          ],
+          "privateKey": "${REALITY_PRIVATE_KEY}",
+          "shortIds": [
+            "${REALITY_SHORT_ID}"
+          ],
+          "minClientVer": ""
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    },
+    {
+      "listen": "0.0.0.0",
+      "port": 5353,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp,udp",
+        "followRedirect": true
+      },
+      "tag": "dns-in"
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct",
+      "settings": {
+        "domainStrategy": "UseIPv6"
+      }
+    },
+    {
+      "tag": "exit",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "${OUT_EXIT_ADDRESS}",
+            "port": ${OUT_REALITY_PORT},
+            "users": [
+              {
+                "id": "${OUT_VLESS_UUID}",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision"
+              }
+            ]
+          }
+        ],
+        "udp": true,
+        "domainStrategy": "${OUT_EXIT_DOMAIN_STRATEGY}"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "${OUT_REALITY_SERVER_NAME}",
+          "publicKey": "${OUT_REALITY_PUBLIC_KEY}",
+          "shortId": "${OUT_REALITY_SHORT_ID}",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "blocked"
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct-dns",
+      "settings": {
+        "domainStrategy": "UseIPv6"
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "port": "853",
+        "network": "tcp",
+        "outboundTag": "exit"
+      },
+      {
+        "type": "field",
+        "network": "udp,tcp",
+        "port": "53",
+        "outboundTag": "exit"
+      },
+      {
+        "type": "field",
+        "network": "tcp",
+        "port": "443",
+        "domain": [
+          "1.1.1.1"
+        ],
+        "outboundTag": "exit"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "socks-in"
+        ],
+        "outboundTag": "exit"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "dns-in"
+        ],
+        "outboundTag": "exit"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "blocked"
+      }
+    ]
+  },
+  "dns": {
+    "servers": [
+      "1.1.1.1",
+      "8.8.8.8",
+      "https://1.1.1.1/dns-query"
+    ],
+    "queryStrategy": "UseIPv6"
+  }
+}

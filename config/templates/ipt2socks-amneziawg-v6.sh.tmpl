@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+while ! ip link show awg0 2>/dev/null | grep -qE 'state UP|LOWER_UP'; do sleep 1; done
+exec ipt2socks -R -6 -T \
+  -B "${AWG_TUNNEL_GATEWAY_IPV6}" \
+  -l "${AWG_IPT2SOCKS_PORT_IPV6}" \
+  -s "${XRAY_IP}" \
+  -p "${SOCKS_PORT}" \
+  -a "${SOCKS_USER}" \
+  -k "${SOCKS_PASSWORD}" \
+  -n "${IPT2SOCKS_NOFILE_LIMIT}" \
+  -j "${IPT2SOCKS_THREADS}" \
+  -o "${IPT2SOCKS_UDP_TIMEOUT}"

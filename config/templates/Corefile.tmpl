@@ -1,0 +1,9 @@
+# Rendered by make build from config/templates/Corefile.tmpl + .data/.env
+.:53 {
+    forward . ${COREDNS_UPSTREAM} {
+        tls_servername ${COREDNS_UPSTREAM_TLS_SNI}
+        health_check 5s
+    }
+    cache 3600
+    errors
+}

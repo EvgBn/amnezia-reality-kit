@@ -1,0 +1,79 @@
+[Interface]
+PrivateKey = ${AWG_SERVER_PRIVATE_KEY}
+Address = ${AWG_TUNNEL_IPV4}
+Address = ${AWG_TUNNEL_IPV6}
+ListenPort = 51820
+
+Jc = ${AWG_JC}
+Jmin = ${AWG_JMIN}
+Jmax = ${AWG_JMAX}
+S1 = ${AWG_S1}
+S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
+H1 = ${AWG_H1}
+H2 = ${AWG_H2}
+H3 = ${AWG_H3}
+H4 = ${AWG_H4}
+
+# --- IPv4 rules ---
+PostUp = iptables -t nat -A PREROUTING -i awg0 -p udp --dport 53 -j DNAT --to-destination ${COREDNS_IP}:53
+PostUp = iptables -t nat -A PREROUTING -i awg0 -p tcp --dport 53 -j DNAT --to-destination ${COREDNS_IP}:53
+PostUp = iptables -t nat -A PREROUTING -i awg0 -p tcp ! --dport 53 -j REDIRECT --to-port ${AWG_IPT2SOCKS_PORT}
+# UDP exit: NFQUEUE -> udp-relay -> SOCKS -> REALITY OUT
+PostUp = iptables -t mangle -A PREROUTING -i awg0 -p udp -m multiport ! --dports 53,784,8853 -m addrtype ! --dst-type LOCAL -j NFQUEUE --queue-num ${AWG_NFQUEUE_NUM} --queue-bypass
+PostUp = iptables -t nat -A POSTROUTING -s ${AWG_TUNNEL_SUBNET_IPV4} -j MASQUERADE
+# RFC1918: ACCEPT CoreDNS:53 before DROP 172.16/12
+PostUp = iptables -A FORWARD -i awg0 -d ${COREDNS_IP} -p udp --dport 53 -j ACCEPT
+PostUp = iptables -A FORWARD -i awg0 -d ${COREDNS_IP} -p tcp --dport 53 -j ACCEPT
+PostUp = iptables -A FORWARD -i awg0 -d 169.254.0.0/16 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -d 100.64.0.0/10 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -d 10.0.0.0/8 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -d 172.16.0.0/12 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -d 192.168.0.0/16 -j DROP
+PostUp = iptables -I FORWARD 1 -i awg0 -o awg0 -j DROP
+PostUp = iptables -t mangle -I FORWARD 1 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+# DoQ: block DNS over QUIC bypass
+PostUp = iptables -A FORWARD -i awg0 -p udp --dport 784 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -p udp --dport 8853 -j DROP
+# Anti-leak: non-DNS UDP must not MASQUERADE via RF (NFQUEUE/udp-relay handles exit UDP)
+PostUp = iptables -I FORWARD 11 -i awg0 -p udp ! --dport 53 -j DROP
+PostUp = iptables -A FORWARD -i awg0 -j ACCEPT
+PostUp = iptables -A FORWARD -o awg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+# --- IPv6 rules ---
+PostUp = ip6tables -t nat -A PREROUTING -i awg0 -p udp --dport 53 -j DNAT --to-destination [${COREDNS_IPV6}]:53
+PostUp = ip6tables -t nat -A PREROUTING -i awg0 -p tcp --dport 53 -j DNAT --to-destination [${COREDNS_IPV6}]:53
+PostUp = ip6tables -t nat -A PREROUTING -i awg0 -p tcp ! --dport 53 -j REDIRECT --to-port ${AWG_IPT2SOCKS_PORT_IPV6}
+PostUp = ip6tables -t nat -A POSTROUTING -s ${AWG_TUNNEL_SUBNET_IPV6} -j MASQUERADE
+PostUp = ip6tables -I FORWARD 1 -i awg0 -p udp ! --dport 53 -j DROP
+PostUp = ip6tables -A FORWARD -i awg0 -j ACCEPT
+PostUp = ip6tables -A FORWARD -o awg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+# --- PostDown IPv4 ---
+PostDown = iptables -t nat -D PREROUTING -i awg0 -p udp --dport 53 -j DNAT --to-destination ${COREDNS_IP}:53
+PostDown = iptables -t nat -D PREROUTING -i awg0 -p tcp --dport 53 -j DNAT --to-destination ${COREDNS_IP}:53
+PostDown = iptables -t nat -D PREROUTING -i awg0 -p tcp ! --dport 53 -j REDIRECT --to-port ${AWG_IPT2SOCKS_PORT}
+PostDown = iptables -t mangle -D PREROUTING -i awg0 -p udp -m multiport ! --dports 53,784,8853 -m addrtype ! --dst-type LOCAL -j NFQUEUE --queue-num ${AWG_NFQUEUE_NUM} --queue-bypass
+PostDown = iptables -t mangle -D PREROUTING -i awg0 -p udp -m multiport ! --dports 53,784,8853 -m conntrack --ctdir REPLY -j RETURN 2>/dev/null || true
+PostDown = iptables -t nat -D POSTROUTING -s ${AWG_TUNNEL_SUBNET_IPV4} -j MASQUERADE
+PostDown = iptables -D FORWARD -i awg0 -d ${COREDNS_IP} -p udp --dport 53 -j ACCEPT
+PostDown = iptables -D FORWARD -i awg0 -d ${COREDNS_IP} -p tcp --dport 53 -j ACCEPT
+PostDown = iptables -D FORWARD -i awg0 -d 169.254.0.0/16 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -d 100.64.0.0/10 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -d 10.0.0.0/8 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -d 172.16.0.0/12 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -d 192.168.0.0/16 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -o awg0 -j DROP
+PostDown = iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+PostDown = iptables -D FORWARD -i awg0 -p udp --dport 784 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -p udp --dport 8853 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -p udp ! --dport 53 -j DROP
+PostDown = iptables -D FORWARD -i awg0 -j ACCEPT
+PostDown = iptables -D FORWARD -o awg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+# --- PostDown IPv6 ---
+PostDown = ip6tables -t nat -D PREROUTING -i awg0 -p udp --dport 53 -j DNAT --to-destination [${COREDNS_IPV6}]:53
+PostDown = ip6tables -t nat -D PREROUTING -i awg0 -p tcp --dport 53 -j DNAT --to-destination [${COREDNS_IPV6}]:53
+PostDown = ip6tables -t nat -D PREROUTING -i awg0 -p tcp ! --dport 53 -j REDIRECT --to-port ${AWG_IPT2SOCKS_PORT_IPV6}
+PostDown = ip6tables -t nat -D POSTROUTING -s ${AWG_TUNNEL_SUBNET_IPV6} -j MASQUERADE
+PostDown = ip6tables -D FORWARD -i awg0 -p udp ! --dport 53 -j DROP
+PostDown = ip6tables -D FORWARD -i awg0 -j ACCEPT
+PostDown = ip6tables -D FORWARD -o awg0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT

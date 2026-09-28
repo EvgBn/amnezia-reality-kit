@@ -1,0 +1,33 @@
+# Operator secrets & live runtime (never commit)
+.data/
+
+# Legacy paths from intermediate scaffold
+.env
+runtime/
+/clients_awg/
+/clients_xray/
+/clients/
+!scripts/clients/
+!scripts/clients/**
+build-snapshots/
+backups/
+compose/
+*.lock
+
+# Keys outside .data (should not exist)
+*.key
+*.pem
+!tests/fixtures/**
+
+# Allow committed examples only
+!config/examples/
+!config/examples/**
+
+# Python / editor
+__pycache__/
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

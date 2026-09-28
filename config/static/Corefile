@@ -1,0 +1,10 @@
+# Deprecated — Corefile is rendered from config/templates/Corefile.tmpl into .data/build/Corefile.
+# Defaults match this file; edit COREDNS_UPSTREAM in .data/.env instead.
+.:53 {
+    forward . tls://1.1.1.1 {
+        tls_servername cloudflare-dns.com
+        health_check 5s
+    }
+    cache 3600
+    errors
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+while ! ip link show awg0 2>/dev/null | grep -qE 'state UP|LOWER_UP'; do sleep 1; done
+exec /usr/local/bin/udp-relay \
+  --queue "${AWG_NFQUEUE_NUM}" \
+  --socks "${XRAY_IP}:${SOCKS_PORT}" \
+  --user "${SOCKS_USER}" \
+  --pass "${SOCKS_PASSWORD}" \
+  --iface awg0 \
+  --session-timeout "${IPT2SOCKS_UDP_TIMEOUT}" \
+  --log-level "${AWG_UDP_RELAY_LOG_LEVEL}"

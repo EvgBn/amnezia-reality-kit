@@ -1,0 +1,38 @@
+# nginx stream SNI router — example-host (198.51.100.10)
+#
+# Profile: MTPROXY_MODE=sni — sites + MTProxy on public :443.
+# Install: docs/SNI-CUTOVER.md
+#
+#   sudo mkdir -p /etc/nginx/stream.d
+#   # Add stream { include ... } to /etc/nginx/nginx.conf if missing (see SNI-CUTOVER.md)
+#   sudo cp config/examples/nginx-stream-443.example-host.conf.example \
+#        /etc/nginx/stream.d/vpn-bridge-443.conf
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Sites must listen on 127.0.0.1:8080 ssl (not 443) before reload.
+# Certbot: DNS-01 required after cutover (HTTP-01 on :443 unavailable).
+
+map $ssl_preread_server_name $upstream_443 {
+    # MTProxy Fake-TLS — MTPROXY_SNI in .data/.env (EE secret tail = google.com)
+    google.com              127.0.0.1:8444;
+    www.google.com          127.0.0.1:8444;
+
+    # Production sites (same certs as before; backend port only changes)
+    example.com            127.0.0.1:8080;
+    www.example.com        127.0.0.1:8080;
+    example.org            127.0.0.1:8080;
+    www.example.org        127.0.0.1:8080;
+
+    # ENABLE_XRAY_INBOUND=0 — no VLESS :8443 entry
+
+    default                 127.0.0.1:8080;
+}
+
+server {
+    listen 443 reuseport;
+    listen [::]:443 reuseport;
+    ssl_preread on;
+    proxy_pass $upstream_443;
+    proxy_connect_timeout 5s;
+    proxy_timeout 1h;
+}
