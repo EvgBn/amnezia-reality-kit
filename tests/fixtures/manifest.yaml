@@ -31,8 +31,10 @@ paths:
   - path: data/compose/teleproxy-standalone.yml
   - path: data/compose/verify-sni-sni-mode.yml
   - path: data/compose/xray-socks-only.yml
+  - path: data/env/copy-from-tuple.env
   - path: data/env/disabled-mtproxy.env
   - path: data/env/enabled-standalone.env
+  - path: data/env/pre-normalize.env
   - path: data/env/render-legacy-ipv6.env
   - path: data/env/render-out-exit-v4.env
   - path: data/env/render-out-exit-v6.env
@@ -82,3 +84,5 @@ consumers:
   - test_awg_remove_report
   - test_ensure_boot_exit
   - test_component_flags
+  - test_env_file_normalize
+  - test_bootstrap_copy_from_tuple

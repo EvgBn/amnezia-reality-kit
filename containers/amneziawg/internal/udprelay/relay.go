@@ -150,6 +150,19 @@ func (r *Relay) currentStats() *associateStats {
 	return socks.stats
 }
 
+// shouldGlobalReconnectForSessionOneWay reports associate-level failure for one-way handling.
+// When false, only the triggering session should be evicted (injectOK > 0 on current associate).
+func (r *Relay) shouldGlobalReconnectForSessionOneWay() bool {
+	stats := r.currentStats()
+	if stats == nil {
+		return true
+	}
+	if stats.injectOK.Load() > 0 {
+		return false
+	}
+	return true
+}
+
 func (r *Relay) attachStats(socks *socks5Client, gen uint64) {
 	socks.stats = newAssociateStats(gen, socks.localPort(), r.clock.Now())
 }

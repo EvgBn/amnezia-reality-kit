@@ -66,7 +66,7 @@ See also: [`manifest.yaml`](manifest.yaml) (machine-readable catalog).
 
 | Subdir | Examples |
 |--------|----------|
-| `env/` | `disabled-mtproxy.env`, `sni-mode.env`, `enabled-standalone.env` |
+| `env/` | `pre-normalize.env`, `copy-from-tuple.env`, `disabled-mtproxy.env`, `sni-mode.env`, … |
 | `nginx/` | `sni-map-good.conf`, `sni-map-bad.conf` |
 | `compose/` | `teleproxy-standalone.yml`, `xray-socks-only.yml` |
 | `json/` | `xray-socks-only.json`, `xray-inbound-sni.json` |

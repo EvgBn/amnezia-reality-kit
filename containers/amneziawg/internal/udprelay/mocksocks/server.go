@@ -30,7 +30,7 @@ type Server struct {
 	tcpConns  []net.Conn
 	tcpMu     sync.Mutex
 	dialCount atomic.Uint32
-	dialDelay time.Duration
+	dialDelay atomic.Int64 // nanoseconds; atomic for -race in tests
 
 	replyEnabled atomic.Bool
 	closed       atomic.Bool
@@ -76,7 +76,7 @@ func (s *Server) DialCount() int {
 }
 
 func (s *Server) SetDialDelay(d time.Duration) {
-	s.dialDelay = d
+	s.dialDelay.Store(int64(d))
 }
 
 func (s *Server) SetReplyEnabled(enabled bool) {
@@ -121,8 +121,8 @@ func (s *Server) acceptLoop() {
 
 func (s *Server) handleTCP(conn net.Conn) {
 	defer conn.Close()
-	if s.dialDelay > 0 {
-		time.Sleep(s.dialDelay)
+	if d := time.Duration(s.dialDelay.Load()); d > 0 {
+		time.Sleep(d)
 	}
 	s.dialCount.Add(1)
 

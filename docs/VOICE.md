@@ -1,6 +1,6 @@
 # Telegram group voice — runbook
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-10-10
 
 Telegram group voice (VoIP) uses **IPv4 UDP** through NFQUEUE → **udp-relay** (Go) → shared SOCKS UDP associate → **xray** → REALITY OUT. TCP chat can work while voice hangs on **Connecting…** if the SOCKS associate is stale (`relay first inject=0`).
 
@@ -52,7 +52,9 @@ make voice-gate WATCH=30
 | Metric | Meaning |
 |--------|---------|
 | `relay first inject=0` | Return path broken — stale or desynced SOCKS UDP associate |
-| `one-way warns>0` | Outbound OK, inbound inject missing |
+| `one-way warns>0` | Outbound OK, inbound inject missing on **that** UDP session — see next row |
+| `session evicted` + `action=session_evict` | One bad UDP flow dropped; associate still healthy (`inject>0` elsewhere). **Not** a full relay swap — ignore if voice works |
+| `associate reconnected` + `action=associate_reconnect` + `reason=one-way` | Global associate heal — all UDP session mappings reset; may correlate with voice glitch |
 | FWD-drop > 0 (L2b) | Stale TPROXY/REPLY rules — `make refresh-full` |
 
 ---

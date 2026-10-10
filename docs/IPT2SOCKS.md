@@ -1,6 +1,6 @@
 # ipt2socks + udp-relay transparent proxy
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-10-10
 
 Transparent TCP + UDP exit in container netns:
 
@@ -31,6 +31,8 @@ Binary: `/usr/local/bin/udp-relay` in **amneziawg** (built from this repo; Go no
 7. **Reconnect** — if xray closes the SOCKS control TCP (`connIdle`, ~5 min idle), dial a fresh associate (see below)
 
 **Zombie associate (why reconnect matters):** SOCKS UDP ASSOCIATE has a TCP control leg and a UDP relay leg. xray closes TCP on idle; without watching that socket, udp-relay kept a dead UDP socket — outbound looked OK, **inject stayed 0**, Telegram voice hung on Connecting…. Reconnect swaps the associate and resets sessions. Logs: `socks tcp control eof`, `associate reconnected`. Regression tests: `containers/amneziawg/tests/udprelay/zombie_associate_test.go`.
+
+**Session one-way (per UDP flow):** After ≥20 outbound packets with zero inject on the **same** 5-tuple (session age ≥5s), udp-relay may treat the flow as one-way. If the **current** SOCKS associate already has **`inject > 0`** (return path proven on other flows), only that session is removed — log `session evicted` with `action=session_evict`; **no** `associate reconnected`, generation unchanged. If associate-level **`injectOK == 0`**, behavior is unchanged: `one-way reconnect triggered` with `action=associate_reconnect`, new associate, **`closeAll`** sessions. Do not read a lone `session one-way` WARN with `path_scenario=SCEN-OK` as full-stack failure when `action=session_evict` follows (e.g. BitTorrent peer with no reply while Telegram inject works).
 
 ## UDP note
 

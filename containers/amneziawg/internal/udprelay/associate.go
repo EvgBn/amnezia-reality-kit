@@ -90,13 +90,34 @@ func (a *associateManager) RequestReconnect(reason string) {
 	}()
 }
 
-func (a *associateManager) tryOneWayReconnect(sess *session) {
+// handleSessionOneWay runs when a session hits high outbound with zero inject.
+// Evicts only that session if the current associate is healthy (injectOK > 0);
+// otherwise schedules associate reconnect (see Relay.shouldGlobalReconnectForSessionOneWay).
+func (a *associateManager) handleSessionOneWay(sess *session) {
 	now := a.relay.clock.Now()
 	sessionAge := now.Sub(sess.openedAt)
 	if sessionAge < oneWaySessionAgeMin {
 		a.logReconnectSkipped("one-way", skipSessionYoung,
 			formatSkipDetail(0, 0, sessionAge, oneWaySessionAgeMin))
 		sess.scheduleOneWayReconnect()
+		return
+	}
+	// Health gate: Relay.shouldGlobalReconnectForSessionOneWay (injectOK on current associate).
+	if !a.relay.shouldGlobalReconnectForSessionOneWay() {
+		if a.relay.sessions.evictIfSame(sess.key(), sess) {
+			a.relay.logger.Info("session evicted",
+				"action", "session_evict",
+				"reason", "one-way",
+				"session", sess.key().String(),
+				"session_age", sessionAge.Round(time.Millisecond),
+				"gen", a.generation.Load(),
+			)
+		} else {
+			a.relay.logger.Debug("one-way session evict skipped",
+				"session", sess.key().String(),
+				"gen", a.generation.Load(),
+			)
+		}
 		return
 	}
 	a.mu.Lock()
@@ -107,6 +128,7 @@ func (a *associateManager) tryOneWayReconnect(sess *session) {
 		return
 	}
 	a.relay.logger.Info("one-way reconnect triggered",
+		"action", "associate_reconnect",
 		"session", sess.key().String(),
 		"session_age", sessionAge.Round(time.Millisecond),
 		"gen", a.generation.Load(),

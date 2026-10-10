@@ -154,7 +154,7 @@ func (s *session) recordOutbound(payloadLen int) {
 				"path_scenario", ScenarioUnknown,
 			)
 		}
-		s.relay.associate.tryOneWayReconnect(s)
+		s.relay.associate.handleSessionOneWay(s)
 	}
 }
 
@@ -191,7 +191,7 @@ func (s *session) scheduleOneWayReconnect() {
 			"outbound", s.outboundCount.Load(),
 			"inject", s.injectCount.Load(),
 		)
-		s.relay.associate.tryOneWayReconnect(s)
+		s.relay.associate.handleSessionOneWay(s)
 	}()
 }
 
@@ -280,6 +280,21 @@ func (t *sessionTable) closeAll() {
 		s.close()
 		delete(t.entries, key)
 	}
+}
+
+// evictIfSame removes one session when the map still holds expected at key.
+// Returns false if the entry is missing or was replaced (e.g. after reconnect).
+func (t *sessionTable) evictIfSame(key sessionKey, expected *session) bool {
+	t.mu.Lock()
+	cur, ok := t.entries[key]
+	if !ok || cur != expected {
+		t.mu.Unlock()
+		return false
+	}
+	delete(t.entries, key)
+	t.mu.Unlock()
+	expected.close()
+	return true
 }
 
 func (t *sessionTable) count() int {

@@ -85,7 +85,7 @@ func TestVoicePathSurvivesRepeatedConnIdle(t *testing.T) {
 				env.relay.AssociatePort() != portBefore
 		})
 
-		inj.calls = 0
+		inj.resetCalls()
 		env.sendVoice(t, 1)
 		waitForInject(t, inj, 1, 2*time.Second)
 	}
@@ -112,7 +112,7 @@ func TestTCPDrainDetectsClosureImmediately(t *testing.T) {
 		t.Fatalf("reconnect after tcp eof took %s; want event-driven detection << connIdle poll", elapsed)
 	}
 
-	inj.calls = 0
+	inj.resetCalls()
 	env.sendVoice(t, 1)
 	waitForInject(t, inj, 1, 2*time.Second)
 }
@@ -158,7 +158,7 @@ func TestZombieAssociateGenerationMonotonic(t *testing.T) {
 		})
 		gen = env.relay.Generation()
 
-		inj.calls = 0
+		inj.resetCalls()
 		env.sendVoice(t, 1)
 		waitForInject(t, inj, 1, 2*time.Second)
 	}
@@ -181,18 +181,10 @@ func TestZombieAssociateWithoutReconnectWouldBreakReturnPath(t *testing.T) {
 	srv.CloseTCP()
 	waitFor(t, 5*time.Second, func() bool { return srv.DialCount() >= 2 })
 
-	inj.calls = 0
+	inj.resetCalls()
 	env.sendVoice(t, 1)
 	waitForInject(t, inj, 1, 2*time.Second)
-	if inj.calls != 1 {
-		t.Fatalf("inject after associate death+reconnect: %d want 1 — pre-PR1 zombie left inject=0", inj.calls)
-	}
-}
-
-func waitForInject(t *testing.T, inj *recordingInjector, want int, timeout time.Duration) {
-	t.Helper()
-	waitFor(t, timeout, func() bool { return inj.calls >= want })
-	if inj.calls < want {
-		t.Fatalf("inject calls: %d want >= %d (return path dead — zombie associate regression?)", inj.calls, want)
+	if inj.callCount() != 1 {
+		t.Fatalf("inject after associate death+reconnect: %d want 1 — pre-PR1 zombie left inject=0", inj.callCount())
 	}
 }

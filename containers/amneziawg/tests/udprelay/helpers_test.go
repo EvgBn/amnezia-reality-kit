@@ -2,6 +2,8 @@ package udprelay_test
 
 import (
 	"net"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -22,7 +24,15 @@ var (
 type testEnv struct {
 	server *mocksocks.Server
 	relay  *udprelay.Relay
+	nowMu  sync.Mutex
 	now    time.Time
+}
+
+func (e *testEnv) clockNow() time.Time {
+	e.nowMu.Lock()
+	t := e.now
+	e.nowMu.Unlock()
+	return t
 }
 
 func newRecordingTestEnv(t *testing.T, srv *mocksocks.Server) (*testEnv, *recordingInjector) {
@@ -39,7 +49,7 @@ func newRecordingTestEnv(t *testing.T, srv *mocksocks.Server) (*testEnv, *record
 		BindAddr:       "127.0.0.1",
 		SessionTimeout: time.Minute,
 	}, udprelay.DiscardLogger(), inj,
-		udprelay.WithClock(func() time.Time { return env.now }),
+		udprelay.WithClock(env.clockNow),
 	)
 	if err != nil {
 		t.Fatalf("new relay: %v", err)
@@ -62,7 +72,7 @@ func newTestEnv(t *testing.T, srv *mocksocks.Server) *testEnv {
 		BindAddr:       "127.0.0.1",
 		SessionTimeout: time.Minute,
 	}, udprelay.DiscardLogger(), noopInjector{},
-		udprelay.WithClock(func() time.Time { return env.now }),
+		udprelay.WithClock(env.clockNow),
 	)
 	if err != nil {
 		t.Fatalf("new relay: %v", err)
@@ -73,7 +83,9 @@ func newTestEnv(t *testing.T, srv *mocksocks.Server) *testEnv {
 }
 
 func (e *testEnv) advance(d time.Duration) {
+	e.nowMu.Lock()
 	e.now = e.now.Add(d)
+	e.nowMu.Unlock()
 }
 
 func (e *testEnv) sendVoice(t *testing.T, count int) {
@@ -86,6 +98,22 @@ func (e *testEnv) sendVoice(t *testing.T, count int) {
 	}
 }
 
+// sendOneWayThresholdOnSession sends enough outbound on frame to trigger session one-way
+// (first packet opens the session, then advance session age, then outboundMin-1 more packets).
+func sendOneWayThresholdOnSession(t *testing.T, env *testEnv, frame []byte) {
+	t.Helper()
+	outboundMin, sessionAgeMin := udprelay.OneWayThresholds()
+	if err := env.relay.HandlePacket(frame); err != nil {
+		t.Fatal(err)
+	}
+	env.advance(sessionAgeMin)
+	for i := 0; i < outboundMin-1; i++ {
+		if err := env.relay.HandlePacket(frame); err != nil {
+			t.Fatalf("one-way threshold packet %d: %v", i, err)
+		}
+	}
+}
+
 type noopInjector struct{}
 
 func (noopInjector) SendReply(_ net.IP, _ net.IP, _, _ uint16, _ []byte) error {
@@ -93,12 +121,28 @@ func (noopInjector) SendReply(_ net.IP, _ net.IP, _, _ uint16, _ []byte) error {
 }
 
 type recordingInjector struct {
-	calls int
+	calls atomic.Int32
 }
 
 func (r *recordingInjector) SendReply(_ net.IP, _ net.IP, _, _ uint16, _ []byte) error {
-	r.calls++
+	r.calls.Add(1)
 	return nil
+}
+
+func (r *recordingInjector) callCount() int {
+	return int(r.calls.Load())
+}
+
+func (r *recordingInjector) resetCalls() {
+	r.calls.Store(0)
+}
+
+func waitForInject(t *testing.T, inj *recordingInjector, want int, timeout time.Duration) {
+	t.Helper()
+	waitFor(t, timeout, func() bool { return inj.callCount() >= want })
+	if inj.callCount() < want {
+		t.Fatalf("inject calls: %d want >= %d (return path dead — zombie associate regression?)", inj.callCount(), want)
+	}
 }
 
 func waitFor(t *testing.T, timeout time.Duration, fn func() bool) {

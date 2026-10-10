@@ -7,13 +7,18 @@ import (
 )
 
 const (
-	reconnectCooldown        = 10 * time.Second
-	dialBackoffBase          = 10 * time.Second
-	dialBackoffMax           = 5 * time.Minute
-	oneWayOutboundMin        = 20
-	oneWaySessionAgeMin      = 5 * time.Second
-	associateHealthInterval  = 5 * time.Minute
+	reconnectCooldown       = 10 * time.Second
+	dialBackoffBase         = 10 * time.Second
+	dialBackoffMax          = 5 * time.Minute
+	oneWayOutboundMin       = 20
+	oneWaySessionAgeMin     = 5 * time.Second
+	associateHealthInterval = 5 * time.Minute
 )
+
+// OneWayThresholds returns session one-way detection thresholds (external tests).
+func OneWayThresholds() (outboundMin int, sessionAgeMin time.Duration) {
+	return oneWayOutboundMin, oneWaySessionAgeMin
+}
 
 // Config holds SOCKS and session settings for the UDP relay.
 type Config struct {

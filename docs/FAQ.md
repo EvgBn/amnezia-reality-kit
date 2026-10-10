@@ -157,6 +157,8 @@ make refresh-full
 
 **Symptom:** Telegram group voice hangs on Connecting…; `make voice-gate` shows `relay first inject=0`, `one-way warns=1`, while TCP chat still works.
 
+If logs show `one-way` but then `action=session_evict` (not `associate_reconnected`) and voice or other UDP still has `inject>0`, only one UDP flow was dropped — see [IPT2SOCKS.md § Session one-way](./IPT2SOCKS.md#udp-relay-go). Treat as incident when `inject=0` or `associate reconnected` follows.
+
 **Fix:** `make refresh-full` (not git rollback — runtime state was stale, not necessarily code). Voice runbook: [VOICE.md](./VOICE.md).
 
 Details: [DEPLOYMENT.md §2](./DEPLOYMENT.md#2-clone-the-repository).

@@ -14,7 +14,9 @@
 //   - tcp-eof: runTCPDrain observes FIN/RST on the control TCP (primary path)
 //   - send-error: WriteToUDP on a dead associate
 //   - read-loop-exit: shared UDP read loop returns an error
-//   - one-way: high outbound with zero inject on a session (session age ≥ 5s)
+//   - one-way: high outbound with zero inject on a session (session age ≥ 5s).
+//     If the current associate already has injectOK > 0, only that session is evicted;
+//     otherwise RequestReconnect("one-way") swaps the associate (see closeAll below).
 //
 // # What reconnect does
 //

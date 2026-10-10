@@ -23,7 +23,7 @@ func TestInjectAfterTCPReconnect(t *testing.T) {
 		BindAddr:       "127.0.0.1",
 		SessionTimeout: time.Minute,
 	}, udprelay.DiscardLogger(), inj,
-		udprelay.WithClock(func() time.Time { return env.now }),
+		udprelay.WithClock(env.clockNow),
 	)
 	if err != nil {
 		t.Fatalf("new relay: %v", err)
@@ -32,18 +32,18 @@ func TestInjectAfterTCPReconnect(t *testing.T) {
 	env.relay = relay
 
 	env.sendVoice(t, 1)
-	waitFor(t, 2*time.Second, func() bool { return inj.calls >= 1 })
-	if inj.calls != 1 {
-		t.Fatalf("inject before reconnect: %d want 1", inj.calls)
+	waitFor(t, 2*time.Second, func() bool { return inj.callCount() >= 1 })
+	if inj.callCount() != 1 {
+		t.Fatalf("inject before reconnect: %d want 1", inj.callCount())
 	}
 
 	srv.CloseTCP()
 	waitFor(t, 5*time.Second, func() bool { return srv.DialCount() >= 2 })
 
-	inj.calls = 0
+	inj.resetCalls()
 	env.sendVoice(t, 1)
-	waitFor(t, 2*time.Second, func() bool { return inj.calls >= 1 })
-	if inj.calls != 1 {
-		t.Fatalf("inject after reconnect: %d want 1", inj.calls)
+	waitFor(t, 2*time.Second, func() bool { return inj.callCount() >= 1 })
+	if inj.callCount() != 1 {
+		t.Fatalf("inject after reconnect: %d want 1", inj.callCount())
 	}
 }
