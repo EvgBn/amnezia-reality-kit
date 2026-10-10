@@ -1,7 +1,7 @@
 .PHONY: help extract-env network-plan build build-diff create-data route route-remove kmod-remove host-remove remove-full first-start check check-watch check-host check-deploy deploy-host mtu \
         start up down ps logs images images-ipt2socks images-pull-upstream recreate refresh-full validate \
         unit-test unit-test-shell unit-test-integration test-go test-one test verify-inbound verify-mtproxy verify-mtproxy-smoke verify-sni-443 regression-443 \
-        smoke-voice-chat voice-smoke-report voice-path-probe voice-fail-snapshot diagnose-udp-path diagnose-udp-path-watch voice-gate \
+        smoke-voice-chat voice-smoke-report voice-path-probe voice-fail-snapshot incident-snapshot diagnose-udp-path diagnose-udp-path-watch voice-gate \
         awg-client-add awg-client-remove awg-client-list mtproxy-export mtproxy-list mtproxy-rotate-secret \
         mtproxy-link mtproxy-link-list
 
@@ -326,6 +326,10 @@ voice-fail-snapshot:
 	@chmod +x scripts/smoke/voice-fail-snapshot.sh scripts/smoke/voice-path-probe.sh
 	./scripts/smoke/voice-fail-snapshot.sh
 
+incident-snapshot:
+	@chmod +x scripts/incident/collect-snapshot.sh scripts/lib/incident-udp-log-patterns.sh
+	./scripts/incident/collect-snapshot.sh
+
 # ── Help ─────────────────────────────────────────────────────────────────────
 help:
 	@h() { \
@@ -423,4 +427,5 @@ help:
 	h '' 'make voice-smoke-report' 'Full metrics + logs (alias: smoke-voice-chat)'; \
 	h '' 'make voice-path-probe' 'Diagnose after voice-gate FAIL'; \
 	h '' 'make voice-fail-snapshot' 'Capture state before refresh-full'; \
+	h '' 'make incident-snapshot' 'Full incident bundle → ~/log/snapshots'; \
 	echo '  Automation: NONINTERACTIVE=1 SMOKE_CLIENT_IP=10.8.0.x make voice-gate'

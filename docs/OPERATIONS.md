@@ -271,6 +271,22 @@ See **[VOICE.md](./VOICE.md)** — full runbook (gate → probe → snapshot →
 
 ---
 
+### Incident snapshot (stack-wide forensics)
+
+While users still see symptoms (before `make recreate` / `refresh-full` if you need in-container logs and health):
+
+```bash
+cd ~/pub/amnezia-reality-kit
+make incident-snapshot
+# or: CLIENT_IP=10.8.0.9 make incident-snapshot
+```
+
+Writes `~/log/snapshots/incident-YYYYMMDD-HHMMSS.log` (mode 600). Same script: `~/log/collect-incident-snapshot.sh` (wrapper). Details: `scripts/incident/README.md`.
+
+For Telegram UDP/tcpdump depth, use `make voice-fail-snapshot` **before** refresh (see VOICE.md).
+
+---
+
 ### Issue: AWG tunnel down (ping 10.8.0.1 fails from host)
 
 ```

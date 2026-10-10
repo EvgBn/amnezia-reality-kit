@@ -27,7 +27,8 @@ cd <REPO_ROOT>
 | 1 | `make diagnose-udp-path` | Static L0–L4 only — **no phone call** |
 | 2 | `make voice-gate WATCH=30` | Live gate — pick client + call state, 30s probe |
 | 3 | `make voice-path-probe` | After FAIL — MODE-A/B verdict (read-only) |
-| 4 | `make voice-fail-snapshot` | Forensics **before** `refresh-full` (tcpdump, associate state) |
+| 4 | `make voice-fail-snapshot` | Forensics **before** `refresh-full` (tcpdump; udp-relay timeline uses `scripts/lib/incident-udp-log-patterns.sh`) |
+| — | `make incident-snapshot` | Broader IN-host bundle → `~/log/snapshots` (see OPERATIONS.md) |
 | 5 | `make refresh-full` | Stale associate, git pull, `.env`/image change |
 
 ```bash

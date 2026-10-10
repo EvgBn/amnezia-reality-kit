@@ -13,6 +13,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "${ROOT}/scripts/lib/common.sh"
 # shellcheck disable=SC1091
 source "${ROOT}/scripts/lib/paths.sh" 2>/dev/null || true
+# shellcheck disable=SC1091
+source "${ROOT}/scripts/lib/incident-udp-log-patterns.sh"
 
 AWG_CONTAINER="${VPN_AWG_CONTAINER:-${VPN_AWG_POD:-vpn-amneziawg}}"
 XRAY_CONTAINER="${VPN_XRAY_CONTAINER:-${VPN_XRAY_POD:-vpn-xray}}"
@@ -28,6 +30,10 @@ section() {
 
 awg_exec() {
   docker exec "${AWG_CONTAINER}" "$@" 2>/dev/null || echo "(command failed: $* in ${AWG_CONTAINER})"
+}
+
+awg_logs_lifetime() {
+  docker logs "${AWG_CONTAINER}" 2>&1
 }
 
 xray_exec() {
@@ -61,31 +67,27 @@ fi
 
   section "timeline (lifetime — when did path last work?)"
   echo "--- associate ready (all) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'shared socks udp associate ready' || echo "(none)"
+  awg_logs_lifetime | grep 'shared socks udp associate ready' || echo "(none)"
   echo "--- last session first outbound (10) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'session first outbound' | tail -10 || echo "(none)"
+  awg_logs_lifetime | grep 'session first outbound' | tail -10 || echo "(none)"
   echo "--- last session first inject (10) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'session first inject' | tail -10 || echo "(none)"
-  echo "--- last one-way warn (5) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'session one-way' | tail -5 || echo "(none)"
-  echo "--- last associate closed (5) — per-gen stats at reconnect ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'associate closed' | tail -5 || echo "(none)"
-  echo "--- last path_scenario one-way (3) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'path_scenario=SCEN-' | tail -10 || echo "(none)"
-  echo "--- reconnect skipped / deferred (10) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep -E 'reconnect skipped|one-way reconnect deferred|one-way reconnect retry|one-way reconnect triggered' | tail -10 || echo "(none)"
+  awg_logs_lifetime | grep 'session first inject' | tail -10 || echo "(none)"
+  echo "--- udp-relay signals (grep: ${UDP_RELAY_GREP}; last ${LOG_TAIL_UDP_TIMELINE}) ---"
+  awg_logs_lifetime | grep -E "${UDP_RELAY_GREP}" | tail -"${LOG_TAIL_UDP_TIMELINE}" || echo "(none)"
+  echo "--- associate snapshot (grep: ${ASSOC_SNAPSHOT_GREP}; last ${LOG_TAIL_ASSOC}) ---"
+  awg_logs_lifetime | grep -E "${ASSOC_SNAPSHOT_GREP}" | tail -"${LOG_TAIL_ASSOC}" || echo "(none)"
+  echo "--- path_scenario (last 10, all codes) ---"
+  awg_logs_lifetime | grep 'path_scenario=SCEN-' | tail -10 || echo "(none)"
   echo "--- socks first udp rx on current port ---"
   if [[ -n "${PORT:-}" ]]; then
-    docker logs "${AWG_CONTAINER}" 2>&1 | grep 'socks first udp rx' | grep "port=${PORT}" | tail -3 || echo "(none — xray never returned UDP on this associate)"
+    awg_logs_lifetime | grep 'socks first udp rx' | grep "port=${PORT}" | tail -3 || echo "(none — xray never returned UDP on this associate)"
   fi
-  echo "--- associate health (last 3) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'associate health' | tail -3 || echo "(none)"
   echo "--- read loop exited (all) ---"
-  docker logs "${AWG_CONTAINER}" 2>&1 | grep 'shared socks read loop exited' || echo "(none)"
+  awg_logs_lifetime | grep 'shared socks read loop exited' || echo "(none)"
   if [[ -n "${PORT:-}" ]]; then
     echo "--- events on current PORT=${PORT} ---"
-    docker logs "${AWG_CONTAINER}" 2>&1 | grep "socks_local_port=${PORT}" \
-      | grep -E 'first outbound|first inject|one-way|session opened' | tail -15 || echo "(none on this port)"
+    awg_logs_lifetime | grep "socks_local_port=${PORT}" \
+      | grep -E 'first outbound|first inject|one-way|session opened|session evicted|action=' | tail -15 || echo "(none on this port)"
   fi
 
   section "TCP control (udp-relay → xray:1080)"

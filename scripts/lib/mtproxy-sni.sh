@@ -130,8 +130,11 @@ mtproxy_sni_openssl_peer_cn() {
     return 2
   fi
 
-  subject="$(echo | timeout 5 openssl s_client -connect "${host}:${port}" -servername "${sni}" 2>/dev/null \
-    | openssl x509 -noout -subject 2>/dev/null || true)"
+  # Sequential s_client then x509 (not a pipe): openssl-mock records SNI in a state file;
+  # a pipeline can run both sides concurrently and read stale/empty SNI.
+  local pem
+  pem="$(echo | timeout 5 openssl s_client -connect "${host}:${port}" -servername "${sni}" 2>/dev/null || true)"
+  subject="$(printf '%s' "${pem}" | openssl x509 -noout -subject 2>/dev/null || true)"
   cn="$(sed -n 's/^subject=.*CN[[:space:]]*=[[:space:]]*//p' <<<"${subject}" | head -1 | sed 's/[[:space:]].*//')"
   printf '%s' "${cn}"
 }
