@@ -14,14 +14,56 @@ preflight_port_holder_name() {
   esac
 }
 
+# ss -Hltnp users:(("procname",…)) — common host TLS fronts (see docs/PORT-443.md).
+preflight_port_holder_is_website_front() {
+  local holder_lc
+  holder_lc="$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')"
+  case "${holder_lc}" in
+    *nginx*|*caddy*|*haproxy*|*apache*|*httpd*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+preflight_xray_inbound_busy_fix() {
+  local port="$1" holder="$2"
+  if preflight_port_holder_is_website_front "${holder}"; then
+    printf '%s' "set ENABLE_XRAY_INBOUND=0 or XRAY_INBOUND_PORT=8443; make build && make recreate (docs/PORT-443.md)"
+    return
+  fi
+  if ! preflight_stack_any_running; then
+    printf '%s' "make start or set ENABLE_XRAY_INBOUND=0 in .data/.env"
+    return
+  fi
+  printf 'free %s/tcp or stop conflicting service' "${port}"
+}
+
 preflight_check_xray_inbound_port() {
   # shellcheck source=../../lib/common.sh
   source "${REPO_ROOT}/scripts/lib/common.sh"
-  local enable port holder
+  local enable port holder fix
+
+  if [[ ! -f "${ENV_FILE:-}" ]]; then
+    emit SKIP PORTS xray-inbound-policy "no .data/.env" \
+      "make create-data COPY_FROM=…; if host :443 is a website set ENABLE_XRAY_INBOUND=0 (docs/PORT-443.md)"
+    return
+  fi
+
   enable="$(parse_bool "${ENABLE_XRAY_INBOUND:-}" 1)"
   if [[ "${enable}" == "1" ]]; then
     port="${XRAY_INBOUND_PORT:-443}"
-    preflight_check_tcp_port "${port}" vpn-xray
+    if ! preflight_port_in_use tcp "${port}"; then
+      emit OK PORTS "tcp/${port}" "free"
+      return
+    fi
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx vpn-xray; then
+      emit OK PORTS "tcp/${port}" "in use by vpn-xray"
+      return
+    fi
+    holder="$(preflight_port_holder_name tcp "${port}")"
+    fix="$(preflight_xray_inbound_busy_fix "${port}" "${holder}")"
+    emit FAIL PORTS "tcp/${port}" "port busy (not vpn-xray)" "${fix}"
     return
   fi
 

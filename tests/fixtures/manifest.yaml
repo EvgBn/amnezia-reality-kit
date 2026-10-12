@@ -79,6 +79,7 @@ consumers:
   - test_preflight_mtproxy_port
   - test_preflight_mtproxy_phase
   - test_preflight_out
+  - test_preflight_xray_port
   - test_awg_add_report
   - test_awg_remove_confirm
   - test_awg_remove_report

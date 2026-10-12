@@ -110,7 +110,7 @@ make ps                      # 3 containers healthy
 
 | Item | Where |
 |------|--------|
-| Phase 7 port logic | `ENABLE_XRAY_INBOUND=0` → OK if :443 is website; FAIL if `vpn-xray` binds :443 |
+| Phase 7 port logic | No `.data/.env` → **SKIP** inbound policy (not FAIL on website :443). With `.env`: `ENABLE_XRAY_INBOUND=0` → OK if :443 is website; FAIL if `vpn-xray` binds :443 |
 | Phase 8 `.env` groups | `REALITY_*` skipped when inbound disabled |
 | Phase 8 `inbound-sync` | `.env` vs `config.json` + **xray** compose ports only (`vpn-teleproxy` :8444 ignored) |
 | `make verify-inbound` | `scripts/maintenance/verify-inbound-config.sh` |

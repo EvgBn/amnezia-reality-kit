@@ -145,7 +145,8 @@ Reads `ENABLE_XRAY_INBOUND`, `XRAY_INBOUND_PORT` from `.data/.env`. See [PORT-44
 
 | Probe | FAIL/WARN | Fix |
 |-------|-----------|-----|
-| **`ENABLE_XRAY_INBOUND=1`** — TCP `${XRAY_INBOUND_PORT}` held by `vpn-xray` | FAIL if foreign process | free port or change `XRAY_INBOUND_PORT` |
+| **No `.data/.env`** — xray inbound policy | **SKIP** | `make create-data`; if host `:443` is a website → `ENABLE_XRAY_INBOUND=0` |
+| **`ENABLE_XRAY_INBOUND=1`** — TCP `${XRAY_INBOUND_PORT}` held by `vpn-xray` | FAIL if foreign process | `ENABLE_XRAY_INBOUND=0` or `XRAY_INBOUND_PORT=8443`, or `make start` — see [PORT-443.md](./PORT-443.md) |
 | **`ENABLE_XRAY_INBOUND=0`** — TCP `:443` held by `vpn-xray` | **FAIL** | `ENABLE_XRAY_INBOUND=0`, **`make refresh-full`** |
 | **`ENABLE_XRAY_INBOUND=0`** — `:443` held by nginx/other | **OK** (website expected) | — |
 | **`ENABLE_XRAY_INBOUND=0`** — `:443` free | **OK** | — |
