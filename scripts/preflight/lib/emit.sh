@@ -102,8 +102,8 @@ preflight_print_summary() {
     if preflight_stack_configured 2>/dev/null && \
        type preflight_stack_any_running >/dev/null 2>&1 && \
        ! preflight_stack_any_running; then
-      printf '\n%sStack stopped — host/data OK.%s  %sStart:%s make start\n' \
-        "${C_ORANGE}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+      printf '\n%sStack stopped — host/data OK.%s  %sStart:%s %s\n' \
+        "${C_ORANGE}" "${C_RESET}" "${C_DIM}" "${C_RESET}" "$(compose_stack_start_hint)"
     else
       printf '\n%sNo blocking FAIL%s — address WARN before declaring prod-ready.\n' \
         "${C_GREEN}" "${C_RESET}"
@@ -117,8 +117,8 @@ preflight_print_summary() {
   elif preflight_stack_any_running 2>/dev/null; then
     printf '\n%sAll checks passed — stack running.%s\n' "${C_GREEN}" "${C_RESET}"
   elif [[ -f "${COMPOSE_FILE:-}" ]]; then
-    printf '\n%sHost/data OK — stack not running.%s  %sStart:%s make start\n' \
-      "${C_DIM}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+    printf '\n%sHost/data OK — stack not running.%s  %sStart:%s %s\n' \
+      "${C_DIM}" "${C_RESET}" "${C_DIM}" "${C_RESET}" "$(compose_stack_start_hint)"
   else
     printf '\n%sHost OK — not deployed.%s  %sNext:%s make create-data && make first-start\n' \
       "${C_DIM}" "${C_RESET}" "${C_DIM}" "${C_RESET}"

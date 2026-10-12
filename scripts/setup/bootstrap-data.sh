@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # First-time .data/ scaffold: .env secrets + directory layout.
-# Does not start containers. Follow with: make build (or create-data runs build --bootstrap).
+# Does not start containers. Follow with: make first-start (create-data also runs render --bootstrap).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -230,4 +230,4 @@ endpoint_normalize_env_file "${ENV_FILE}" || {
 
 echo "[bootstrap] OK — wrote ${ENV_FILE}"
 echo "[bootstrap] IN_INGRESS=$(grep '^IN_INGRESS=' "${ENV_FILE}" | cut -d= -f2-) AWG_PORT=$(grep '^AWG_PORT=' "${ENV_FILE}" | cut -d= -f2)"
-echo "[bootstrap] next: make build   (or make create-data to build --bootstrap)"
+echo "[bootstrap] next: make first-start   # or: make images && make start"

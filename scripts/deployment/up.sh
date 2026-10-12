@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/../lib/paths.sh"
 # shellcheck source=../lib/stack-state.sh
 source "${SCRIPT_DIR}/../lib/stack-state.sh"
+# shellcheck source=../lib/compose-images.sh
+source "${SCRIPT_DIR}/../lib/compose-images.sh"
 
 CMD="${1:-}"
 
@@ -50,6 +52,7 @@ if [[ ! -f "${ENV_FILE}" ]]; then
 fi
 
 if [[ "${CMD}" == "up" || "${CMD}" == "start" ]]; then
+  compose_require_local_images
   docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" "$@"
   rc=$?
   if [[ "${rc}" -eq 0 ]] && systemctl is-enabled xray-tproxy.service >/dev/null 2>&1; then

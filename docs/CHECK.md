@@ -181,6 +181,7 @@ Build artifacts (same set as `render-config.sh`):
 | `ipt2socks-*.sh` mode **755** | **FAIL** if not executable | `make build` |
 
 | `amneziawg:${AMNEZIAWG_RELEASE}` image (or `AWG_IMAGE`) | WARN if missing | `make images` or `AWG_IMAGE=… make create-data` |
+| `zfl9/ipt2socks:latest` (local; `make images-ipt2socks`) | WARN if missing | `make images` (**required before `make start`** on a new host) |
 
 ### Phase 9 — Stack runtime (`09-stack.sh` + `lib/stack.sh`)
 
@@ -188,7 +189,7 @@ Build artifacts (same set as `render-config.sh`):
 |-------|--------|-----|
 | No `.data/build/` yet | **SKIP** stack | `make create-data && make first-start` |
 | Configured, **`make down`** (`.stack-stopped`) | **OK** intentionally stopped | **`make start`** when ready |
-| Configured, stopped, **no** `.stack-stopped`, boot enabled | **WARN** (FAIL with `CHECK_STRICT=1`) | **`make down`** to persist, or **`make start`** |
+| Configured, stopped, **no** `.stack-stopped`, boot enabled | **WARN** (FAIL with `CHECK_STRICT=1`) | **`make down`** to persist, or **`make start`** / **`make images && make start`** if ipt2socks image missing (see Phase 8) |
 | `vpn-*` running but unhealthy | **FAIL** | `make logs`, **`make refresh-full`** |
 | Running + healthy + route OK | **OK** | — |
 | Per-container health (when up) | **FAIL** if unhealthy | `make logs`; **`make refresh-full`** (or `dc restart coredns` if DNS-only) |
@@ -200,7 +201,7 @@ Build artifacts (same set as `render-config.sh`):
 | Situation | Footer (not generic “All checks passed”) |
 |-----------|------------------------------------------|
 | Stack running, no FAIL/WARN | `All checks passed — stack running.` |
-| Stack stopped after `make down` | `Stack stopped — host/data OK. Start: make start` |
+| Stack stopped (containers down) | `Stack stopped — host/data OK. Start: make start` or `make images && make start` when Phase 8 WARN on `ipt2socks-image` |
 | Fresh clone, no `.data/` | `Host OK — not deployed. Next: make create-data && make first-start` |
 
 ### Phase 10 — OUT path (`10-out.sh` + `lib/out.sh`)

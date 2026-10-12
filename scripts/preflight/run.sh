@@ -94,6 +94,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# shellcheck source=../lib/compose-images.sh
+source "${PREFLIGHT_DIR}/../lib/compose-images.sh"
 # shellcheck source=lib/emit.sh
 source "${PREFLIGHT_DIR}/lib/emit.sh"
 preflight_init_colors

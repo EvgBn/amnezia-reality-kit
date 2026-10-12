@@ -16,6 +16,7 @@ create-data:
 	@chmod +x scripts/setup/bootstrap-data.sh scripts/maintenance/vpn-awg-route.sh
 	COPY_FROM="$(COPY_FROM)" AWG_IMAGE="$(AWG_IMAGE)" ./scripts/setup/bootstrap-data.sh
 	./scripts/setup/render-config.sh --bootstrap
+	@echo "[create-data] OK — .data/ ready. Next: make first-start"
 
 route:
 	@chmod +x scripts/maintenance/vpn-awg-route.sh
@@ -229,6 +230,7 @@ ps:
 logs:
 	./scripts/deployment/up.sh logs --tail=50
 
+# Tag must match COMPOSE_IPT2SOCKS_IMAGE in scripts/lib/compose-images.sh
 images-ipt2socks:
 	docker build -t zfl9/ipt2socks:latest containers/ipt2socks
 

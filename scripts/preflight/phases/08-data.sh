@@ -96,4 +96,15 @@ preflight_phase_08_data() {
   else
     emit WARN DATA awg-image "${awg_image} missing" "make images (before create-data)"
   fi
+
+  local ipt2socks_image
+  ipt2socks_image="$(compose_ipt2socks_image_ref)"
+  if compose_ipt2socks_image_present; then
+    emit OK DATA ipt2socks-image "${ipt2socks_image} available"
+  elif [[ -f "${ENV_FILE}" ]]; then
+    emit WARN DATA ipt2socks-image "${ipt2socks_image} missing (local build)" \
+      "make images (required before make start)"
+  else
+    emit WARN DATA ipt2socks-image "${ipt2socks_image} missing" "make images"
+  fi
 }

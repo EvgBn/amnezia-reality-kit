@@ -22,9 +22,9 @@ preflight_phase_09_stack() {
     if preflight_boot_unit_enabled; then
       preflight_emit WARN STACK stack \
         "stopped — boot will auto-start on reboot (no .stack-stopped)" \
-        "make down to persist stop, or make start"
+        "make down to persist stop, or $(compose_stack_start_hint)"
     else
-      preflight_emit WARN STACK stack "stopped (no vpn-* containers)" "make start"
+      preflight_emit WARN STACK stack "stopped (no vpn-* containers)" "$(compose_stack_start_hint)"
     fi
     return
   fi

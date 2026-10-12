@@ -187,6 +187,22 @@ Exit code stays **0** (host and data are fine), but the message is **not** “al
 
 ---
 
+## After `create-data`, check says `make start`, but compose fails on `zfl9/ipt2socks`
+
+`make create-data` renders `.data/build/` but does **not** build stack images. `zfl9/ipt2socks:latest` is a **local** tag from `make images-ipt2socks` (not on Docker Hub). Until it exists, `make start` / `make up` will fail with a Docker pull error on that name.
+
+**Fix (pick one):**
+
+```bash
+make first-start          # validate → build → images → start (recommended once)
+# or, if build/ already exists:
+make images && make start
+```
+
+Phase 8 should WARN on **`ipt2socks-image`**; the check summary then suggests **`make images && make start`** instead of bare **`make start`**.
+
+---
+
 ## I need :443 for a website on the same IN server
 
 Set in `.data/.env`:
