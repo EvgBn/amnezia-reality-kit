@@ -17,6 +17,8 @@ preflight_phase_11_mtproxy() {
     return
   fi
 
+  preflight_check_mtproxy_profile
+
   if [[ -f "${ENV_FILE}" ]]; then
     if [[ "${MTPROXY_MODE:-standalone}" == "sni" ]]; then
       preflight_check_mtproxy_env_group "MTPROXY_*" "${PREFLIGHT_ENV_MTPROXY[@]}" MTPROXY_SNI

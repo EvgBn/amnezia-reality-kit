@@ -231,6 +231,8 @@ Optional Telegram ingress. **Skipped** when `ENABLE_MTPROXY=0` (unless stale `vp
 |-------|-----------|-----|
 | **`ENABLE_MTPROXY=0`** | **SKIP** phase | — |
 | **`ENABLE_MTPROXY=0`** + `vpn-teleproxy` running | **WARN** stale | `make refresh-full` |
+| **`profile`** | **WARN** if `ENABLE_MTPROXY=1` and `MTPROXY_MODE` ≠ `sni` | `MTPROXY_MODE=sni` + [SNI-CUTOVER.md](./SNI-CUTOVER.md) |
+| **`profile`** | OK if `MTPROXY_MODE=sni` | — |
 | **`MTPROXY_*` env** | FAIL per empty key | edit `.env` |
 | **`mtproxy-sync`** | FAIL if `.env` ≠ compose | `make build && make refresh-full` |
 | **`teleproxy-image`** | WARN if missing | `make images-pull-upstream` |

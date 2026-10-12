@@ -6,6 +6,17 @@ preflight_stack_containers_expected() {
   _out=(vpn-xray vpn-amneziawg vpn-coredns)
 }
 
+# Prod target is sni on :443 (see docs/SNI-9-PLUS.md); standalone is staging-friendly only.
+preflight_check_mtproxy_profile() {
+  local mode="${MTPROXY_MODE:-standalone}"
+  if [[ "${mode}" == "sni" ]]; then
+    emit OK MTPROXY profile "MTPROXY_MODE=sni (TG via nginx stream :443)"
+    return
+  fi
+  emit WARN MTPROXY profile "TG enabled without SNI (mode=${mode}, not public :443)" \
+    "prod: MTPROXY_MODE=sni — docs/SNI-CUTOVER.md"
+}
+
 preflight_check_mtproxy_env_group() {
   local label="$1"
   shift
