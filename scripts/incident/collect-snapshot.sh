@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Forensic bundle for VPN incidents on the IN host (e.g. vpn-rf).
+# Forensic bundle for VPN incidents on the IN host (<IN_SERVER>).
 # Run while symptoms are visible (before recreate if you still need in-container state).
 #
 # Usage (from kit root):

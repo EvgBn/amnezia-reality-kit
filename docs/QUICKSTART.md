@@ -15,7 +15,7 @@ Deep reference: [DEPLOYMENT.md](./DEPLOYMENT.md), [OPERATIONS.md](./OPERATIONS.m
 Run in order (`sudo make deploy-host` **before** `make create-data`):
 
 ```bash
-git clone git@github.com-amnezia-kit:EvgBn/amnezia-reality-kit.git ~/vpn-test
+git clone https://github.com/EvgBn/amnezia-reality-kit.git ~/vpn-test
 cd ~/vpn-test
 
 sudo ./scripts/setup/install-docker.sh    # if Docker not installed
@@ -36,7 +36,7 @@ Transfer `.data/clients_awg/phone.conf` to the device and use it in AmneziaWG. R
 
 ```bash
 cd ~/old-vpn-dir && make down
-git clone … ~/vpn-test && cd ~/vpn-test
+git clone https://github.com/EvgBn/amnezia-reality-kit.git ~/vpn-test && cd ~/vpn-test
 sudo make deploy-host                     # skip if already done
 make create-data COPY_FROM=~/old-vpn-dir/.data/.env
 make first-start

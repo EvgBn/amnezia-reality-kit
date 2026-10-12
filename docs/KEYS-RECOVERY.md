@@ -106,7 +106,7 @@ You need **the same server keypair** that was embedded in client `[Peer] PublicK
    ls -lt .data/build-snapshots/*/.env .data/build-snapshots/pre-env-refactor-*/.env 2>/dev/null
    ```
 
-3. **Tmp / old clone** — e.g. `~/tmp/vpnGit/amnezia-reality-kit/.data/.env` (verify with pubkey check below).
+3. **Tmp / old clone** — e.g. `</path/to/backup>/.data/.env` from a known-good tree (verify with pubkey check below).
 4. **`make create-data COPY_FROM=/path/to/.data/.env`** — only after you have a **verified** `.env`; never blind `make create-data` on prod (can generate **new** keys).
 
 ### After restoring `.data/.env`

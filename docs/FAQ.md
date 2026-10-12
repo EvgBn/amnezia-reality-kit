@@ -161,7 +161,7 @@ If logs show `one-way` but then `action=session_evict` (not `associate_reconnect
 
 **Fix:** `make refresh-full` (not git rollback — runtime state was stale, not necessarily code). Voice runbook: [VOICE.md](./VOICE.md).
 
-Details: [DEPLOYMENT.md §2](./DEPLOYMENT.md#2-clone-the-repository).
+Details: [DEPLOYMENT.md § Daily operations](./DEPLOYMENT.md#daily-operations) (`make refresh-full` after pull/checkout).
 
 ---
 

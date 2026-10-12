@@ -61,7 +61,7 @@ flowchart TB
 ## Quick start (IN server)
 
 ```bash
-git clone git@github.com-amnezia-kit:EvgBn/amnezia-reality-kit.git ~/vpn-test
+git clone https://github.com/EvgBn/amnezia-reality-kit.git ~/vpn-test
 cd ~/vpn-test
 
 sudo ./scripts/setup/install-docker.sh    # if needed

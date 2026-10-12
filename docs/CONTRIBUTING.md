@@ -41,4 +41,6 @@ Operator-facing summary belongs in [QUICKSTART.md](./QUICKSTART.md) only when it
 
 See [tests/fixtures/README.md](../tests/fixtures/README.md). Prefer `fixture_load_case` over inline heredocs in new tests.
 
+Fixture IPs and endpoints in `tests/fixtures/` are regression snapshots — they are **not** documentation examples; user-facing docs use placeholders from `.env.example`.
+
 → [All documentation](./README.md)

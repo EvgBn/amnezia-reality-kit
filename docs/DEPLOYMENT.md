@@ -16,7 +16,7 @@ Step-by-step deployment using **`make` targets**. Live secrets and build output 
 - Ports **443/tcp** (only if `ENABLE_XRAY_INBOUND=1` in `.env`) and **AWG UDP** (default `58285`) free — see [PORT-443.md](./PORT-443.md) if :443 is used by a website
 - Only **one** stack at a time (`vpn-xray`, `vpn-amneziawg`, `vpn-coredns`, network `vpn`)
 
-**IPv6:** Docker bridge must use **ULA** (`DOCKER_NETWORK_SUBNET_IPV6`, default `fd87:172:20::/64`), not `2001:db8::/32` (RFC 3849). OUT exit needs a real **GUA** in `OUT_EXIT`, e.g. `OUT_EXIT='6; 2a10:1fc0:c::5375:710f'`. See [ARCHITECTURE.md](./ARCHITECTURE.md#docker-network-vpn) and `.env.example`.
+**IPv6:** Docker bridge must use **ULA** (`DOCKER_NETWORK_SUBNET_IPV6`, default `fd87:172:20::/64`), not `2001:db8::/32` (RFC 3849). OUT exit needs a real **GUA** in `OUT_EXIT`, e.g. `OUT_EXIT='6; 2606:4700::1'` (same style as [OUT.md](./OUT.md)). See [ARCHITECTURE.md](./ARCHITECTURE.md#docker-network-vpn) and `.env.example`.
 
 **Docker bridge IPv4:** set **one** variable `DOCKER_NETWORK_SUBNET_IPV4` (default `10.200.97.0/24` — intentionally outside the usual `172.17–172.31` ladder). `make build` derives gateway and container IPs (`.2` CoreDNS, `.3` AWG, `.4` Xray). Do **not** add `COREDNS_IP` / `AMNEZIAWG_IP` / `XRAY_IP` unless you pin a custom address. On shared hosts, pick any free `/24` — `make network-plan` shows the resolved plan; `make check` phase 8 fails early on pool overlap.
 
@@ -41,11 +41,18 @@ Step-by-step deployment using **`make` targets**. Live secrets and build output 
 ### 1. Clone
 
 ```bash
-git clone git@github.com-amnezia-kit:EvgBn/amnezia-reality-kit.git ~/vpn-test
+git clone https://github.com/EvgBn/amnezia-reality-kit.git ~/vpn-test
 cd ~/vpn-test
 ```
 
-Local mirror:
+SSH (optional, if you use a GitHub deploy key):
+
+```bash
+git clone git@github.com:EvgBn/amnezia-reality-kit.git ~/vpn-test
+cd ~/vpn-test
+```
+
+Maintainer **local mirror only** — not for new servers:
 
 ```bash
 git clone ~/amnezia-reality-kit ~/vpn-test
@@ -156,10 +163,7 @@ make ps    # no vpn-* containers
 
 ### 2. Clone (or pull) the new repo
 
-```bash
-git clone git@github.com-amnezia-kit:EvgBn/amnezia-reality-kit.git ~/vpn-test
-cd ~/vpn-test
-```
+Same as [Path A §1 Clone](#1-clone) (`https://github.com/EvgBn/amnezia-reality-kit.git`).
 
 ### 3. Host bootstrap (if not done on this machine)
 

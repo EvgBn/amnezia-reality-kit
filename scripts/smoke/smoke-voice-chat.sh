@@ -121,7 +121,7 @@ print_report() {
   printf '  %-28s %12s\n' "awg container errors" "${awg_log_errors}"
   echo ""
   echo "OUT tcpdump (return path on OUT — optional):"
-  echo "  ssh vpn-out \"sudo tcpdump -ni any 'host 91.108.9.58 and udp portrange 32000-32003'\""
+  echo "  ssh -p <port> user@<OUT_IPV6> \"sudo tcpdump -ni any 'host 91.108.9.58 and udp portrange 32000-32003'\""
   echo ""
 
   echo "=== verdict ==="
