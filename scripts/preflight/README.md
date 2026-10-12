@@ -12,6 +12,7 @@ scripts/preflight/
 │   ├── emit.sh            # OK/WARN/FAIL output, summary
 │   ├── env.sh             # .env groups: OUT_*, REALITY_*, core
 │   ├── registry.sh        # units, containers, build artifacts
+│   ├── os_memory.sh       # phase 2: RAM/swap thresholds (see docs/CHECK.md)
 │   ├── probes.sh          # docker, ports, systemd (low-level)
 │   ├── network.sh         # phase 7: ports, AWG route
 │   ├── stack.sh           # phase 9: health, route ↔ bridge
@@ -27,10 +28,13 @@ scripts/preflight/
     └── 11-mtproxy.sh                    # MTPROXY (optional)
 ```
 
+**Phase 2 memory:** thresholds and SKIP rules are implemented in `lib/os_memory.sh`; operator reference — [CHECK.md § Phase 2 — OS](../../docs/CHECK.md#phase-2--os) (RAM ≥ 1.75 GiB, swap ≥ 1 GiB, or RAM+swap ≥ 2.5 GiB).
+
 ## Phase map
 
 | Phase | Slug | Module | Scope flag |
 |-------|------|--------|------------|
+| 2 | OS | `02-os.sh` + `os_memory.sh` | `--host` (memory SKIP uses `docker image inspect` only when `docker info` already works; kmod file must exist — see [CHECK.md](../../docs/CHECK.md) Phase 2) |
 | 6 | HOST SVC | `06-host-svc.sh` + `registry.sh` | `--deploy` |
 | 7 | NETWORK | `07-network.sh` + `network.sh` | `--deploy` |
 | 8 | DATA | `08-data.sh` + `env.sh` + `registry.sh` | `--deploy` |

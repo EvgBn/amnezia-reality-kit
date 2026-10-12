@@ -58,7 +58,7 @@ Checks run in **dependency order** (host → tooling → data → runtime).
 
 ```text
 Phase 1  REPO      ── scripts, templates present in clone
-Phase 2  OS        ── Ubuntu version, swap for image builds
+Phase 2  OS        ── Ubuntu version, host memory for image/kmod builds
 Phase 3  DOCKER    ── engine, compose plugin, socket access, group
 Phase 4  KERNEL    ── AmneziaWG module (awg0 in container)
 Phase 5  HOST SYS  ── ip_forward, conntrack drop-ins
@@ -96,7 +96,12 @@ Each line is independent; the script **never mutates** the system.
 | Probe | FAIL/WARN | Fix |
 |-------|-----------|-----|
 | `/etc/os-release` ID=ubuntu, VERSION_ID ≥ 24.04 | WARN | use supported Ubuntu |
-| Swap total ≥ 1 GiB (or RAM ≥ 2 GiB) | WARN | add swap before `make images` |
+| Host memory for `make images` / `deploy-host` | WARN | if build exits Killed (137), add ≥2G swap |
+| `amneziawg` image **and** host `amneziawg.ko` for running kernel | SKIP | — |
+
+**Memory OK** if any: RAM ≥ 1.75 GiB, or swap ≥ 1 GiB, or RAM+swap ≥ 2.5 GiB. Otherwise WARN before first image build.
+
+**SKIP / Docker order:** Phase 2 may call `docker image inspect` when `preflight_docker_accessible` (same probe as Phase 3 socket: `docker info`). Phase 3 still owns full Docker validation. Image alone does not SKIP memory — host kmod from `deploy-host` must exist too.
 
 ### Phase 3 — Docker
 

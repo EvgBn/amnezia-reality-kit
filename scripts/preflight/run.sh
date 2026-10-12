@@ -105,6 +105,8 @@ source "${PREFLIGHT_DIR}/../lib/stack-state.sh"
 source "${PREFLIGHT_DIR}/lib/env.sh"
 # shellcheck source=lib/probes.sh
 source "${PREFLIGHT_DIR}/lib/probes.sh"
+# shellcheck source=lib/os_memory.sh
+source "${PREFLIGHT_DIR}/lib/os_memory.sh"
 # shellcheck source=lib/registry.sh
 source "${PREFLIGHT_DIR}/lib/registry.sh"
 # shellcheck source=lib/network.sh

@@ -20,13 +20,38 @@ preflight_phase_02_os() {
     emit WARN OS os-release "/etc/os-release missing" "verify OS manually"
   fi
 
-  local swap_kb ram_kb
+  local swap_kb ram_kb detail awg_image image_present kmod_path kmod_present
   swap_kb="$(awk '/SwapTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
   ram_kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
-  if [[ "${swap_kb}" -ge 1048576 ]] || [[ "${ram_kb}" -ge 2097152 ]]; then
-    emit OK OS memory "swap=$((swap_kb / 1024))MiB ram=$((ram_kb / 1024))MiB"
+  detail="$(preflight_os_memory_detail "${ram_kb}" "${swap_kb}")"
+
+  awg_image="$(preflight_awg_image_ref)"
+  image_present=false
+  if preflight_docker_accessible \
+    && docker image inspect "${awg_image}" >/dev/null 2>&1; then
+    image_present=true
+  fi
+
+  kmod_path="$(host_l1_module_path "$(uname -r)")"
+  kmod_present=false
+  [[ -f "${kmod_path}" ]] && kmod_present=true
+
+  # SKIP only when both heavy paths are done (compose image + host kmod from deploy-host).
+  if [[ "${image_present}" == true && "${kmod_present}" == true ]]; then
+    emit SKIP OS memory "${detail}; ${awg_image} and host kmod present"
+  elif preflight_os_memory_sufficient "${ram_kb}" "${swap_kb}"; then
+    if [[ "${image_present}" == true && "${kmod_present}" != true ]]; then
+      emit OK OS memory \
+        "${detail}; ${awg_image} local — deploy-host/kmod may still need RAM"
+    else
+      emit OK OS memory "${detail}"
+    fi
+  elif [[ "${image_present}" == true && "${kmod_present}" != true ]]; then
+    emit WARN OS memory \
+      "${detail}; ${awg_image} local but host kmod missing (deploy-host is memory-heavy)" \
+      "if build exits Killed (137), add ≥2G swap before sudo make deploy-host"
   else
-    emit WARN OS memory "low swap/RAM for image build (swap=$((swap_kb / 1024))MiB)" \
-      "add 2G swap before make images"
+    emit WARN OS memory "${detail} (low for make images / deploy-host)" \
+      "if build exits Killed (137), add ≥2G swap"
   fi
 }
