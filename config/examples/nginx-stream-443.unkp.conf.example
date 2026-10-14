@@ -1,0 +1,30 @@
+# nginx stream SNI router — unkp (153.76.162.175)
+#
+# Profile: MTPROXY_MODE=sni — unkp.ru + MTProxy on public :443.
+# Mirror of vpn-rf layout; see docs/SNI-CUTOVER.md
+#
+#   sudo mkdir -p /etc/nginx/stream.d
+#   # stream { include /etc/nginx/stream.d/*.conf; } in /etc/nginx/nginx.conf (after http {})
+#   sudo cp config/examples/nginx-stream-443.unkp.conf.example \
+#        /etc/nginx/stream.d/vpn-bridge-443.conf
+#
+# Sites: listen 127.0.0.1:8080 ssl in sites-enabled/unkp.ru.conf before reload.
+
+map $ssl_preread_server_name $upstream_443 {
+    google.com              127.0.0.1:8444;
+    www.google.com          127.0.0.1:8444;
+
+    unkp.ru                 127.0.0.1:8080;
+    www.unkp.ru             127.0.0.1:8080;
+
+    default                 127.0.0.1:8080;
+}
+
+server {
+    listen 443 reuseport;
+    listen [::]:443 reuseport;
+    ssl_preread on;
+    proxy_pass $upstream_443;
+    proxy_connect_timeout 5s;
+    proxy_timeout 1h;
+}

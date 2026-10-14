@@ -29,17 +29,17 @@ voice_smoke_require_container() {
 }
 
 voice_smoke_counter_nfqueue() {
-  docker exec "${AWG_CONTAINER}" iptables -t mangle -L PREROUTING -v -n 2>/dev/null \
+  docker exec "${AWG_CONTAINER}" iptables -t mangle -L PREROUTING -v -n -x 2>/dev/null \
     | awk -v q="${NFQUEUE_NUM}" '/NFQUEUE/ && $0 ~ q {print $1; exit}'
 }
 
 voice_smoke_counter_nat_tcp_redirect() {
-  docker exec "${AWG_CONTAINER}" iptables -t nat -L PREROUTING -v -n 2>/dev/null \
+  docker exec "${AWG_CONTAINER}" iptables -t nat -L PREROUTING -v -n -x 2>/dev/null \
     | awk '/REDIRECT/ && /tcp/ {print $1; exit}'
 }
 
 voice_smoke_counter_forward_udp_drop() {
-  docker exec "${AWG_CONTAINER}" iptables -L FORWARD -v -n 2>/dev/null \
+  docker exec "${AWG_CONTAINER}" iptables -L FORWARD -v -n -x 2>/dev/null \
     | awk '/DROP/ && /udp/ && /dpt:!53/ {print $1; exit}'
 }
 
