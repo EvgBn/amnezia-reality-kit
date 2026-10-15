@@ -3,6 +3,7 @@
 # Consumers:
 #   scripts/smoke/voice-fail-snapshot.sh
 #   scripts/incident/collect-snapshot.sh  (make incident-snapshot)
+#   scripts/incident/metrics-tick.sh → incident-metrics-collect-lib.sh
 #   tests/unit/test_incident_log_patterns.sh
 #
 # When udprelay adds new log fields for triage, update UDP_RELAY_GREP here only.
@@ -17,3 +18,7 @@ readonly IPT2SOCKS_GREP='ipt2socks|Operation timed out|EMFILE|accept.*failed'
 readonly UDP_RELAY_GREP='one-way|inject reply failed|socks first udp rx|associate closed|reconnect started|session evicted|associate reconnected|action=session_evict|action=associate_reconnect|reconnect coalesced|reconnect skipped|one-way reconnect deferred|one-way reconnect retry|one-way reconnect triggered|path_scenario=SCEN-F'
 
 readonly ASSOC_SNAPSHOT_GREP='associate health|associate closed'
+
+# Exact substrings for incident counters (snapshot LOG_SINCE + tick log deltas).
+readonly INCIDENT_AWG_INJECT_FAIL_GREP='inject reply failed'
+readonly INCIDENT_AWG_IPT2SOCKS_CLIENT_TO_GREP='recv from client stream: Operation timed out'

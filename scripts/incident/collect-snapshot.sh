@@ -16,7 +16,11 @@ source "${_script_dir}/../lib/paths.sh"
 source "${REPO_ROOT}/scripts/lib/incident-udp-log-patterns.sh"
 # shellcheck source=../lib/incident-snapshot-lib.sh
 source "${REPO_ROOT}/scripts/lib/incident-snapshot-lib.sh"
+# shellcheck source=../lib/incident-channel-lib.sh
+source "${REPO_ROOT}/scripts/lib/incident-channel-lib.sh"
 unset _script_dir
+
+INCIDENT_METRICS_DIR="${INCIDENT_METRICS_DIR:-${HOME}/log/metrics}"
 
 INCIDENT_OUT_DIR="${INCIDENT_OUT_DIR:-${OUT_DIR:-${HOME}/log/snapshots}}"
 CLIENT_IP="${CLIENT_IP:-10.8.0.7}"
@@ -423,6 +427,11 @@ COLLECTION_START_UTC="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo "--- last accepted lines ---"
   dc_logs xray | grep accepted | tail -15 || true
 
+  _metrics_day="$(date -u '+%Y-%m-%d')"
+  _metrics_csv="${INCIDENT_METRICS_DIR}/${_metrics_day}.csv"
+  section "channel matrix tail (metrics CSV v2 — ~hour before snapshot at 2m cron)"
+  incident_csv_tail_section "${_metrics_csv}" "${INCIDENT_METRICS_TAIL_LINES}"
+
   section "verdict (artifact summary — rules over this file only)"
   echo "collection_end_utc: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   _trigger=unknown
@@ -459,7 +468,25 @@ COLLECTION_START_UTC="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo "LOAD_SWAP_USED_MB=$(incident_swap_used_mb)"
   echo "CANON_NFQUEUE_PKTS=${INC_CANON_NFQ_PKTS}"
   echo "TRIGGER=${_trigger}"
-  echo "TRIGGER_note: time-series before peak needs ~/log/metrics CSV (make incident-metrics-tick)"
+  echo "TRIGGER_note: see also PRIMARY/CORRELATION below and ~/log/events/*.jsonl"
+
+  _inject_fail_n="$(awg_logs | grep -cF "${INCIDENT_AWG_INJECT_FAIL_GREP}" || true)"
+  _p2p_n="${_p2p_n:-0}"
+  INC_VERDICT_HOST="${INC_HOST_UPLINK}"
+  INC_VERDICT_OUT_ICMP="${INC_OUT_ICMP}"
+  INC_VERDICT_OUT_TCP="${INC_OUT_TCP443}"
+  INC_VERDICT_SOCKS="${INC_SOCKS_EGRESS}"
+  INC_VERDICT_DNS_LOCAL="${INC_DNS_LOCAL}"
+  INC_VERDICT_DNS_CLIENT="${INC_DNS_CLIENT_PATH}"
+  INC_VERDICT_UDP_RELAY="${INC_UDP_RELAY}"
+  INC_VERDICT_INJECT_FAIL_N="${_inject_fail_n}"
+  INC_VERDICT_P2P_N="${_p2p_n}"
+  INC_VERDICT_IPT2SOCKS_CLIENT_TO="$(awg_logs | grep -cF "${INCIDENT_AWG_IPT2SOCKS_CLIENT_TO_GREP}" || true)"
+  INC_VERDICT_RST_COREDNS="${INC_RST_COREDNS_LOG}"
+
+  section "verdict v2 (PRIMARY / CORRELATION — snapshot artifact)"
+  incident_verdict_v2_compute
+  echo "verdict_v2_note: CORRELATION=p2p_* is window correlation in LOG_SINCE, not proven root cause"
 
   section "verdict hints (read-only)"
   echo "Compare host ping/curl vs xray→OUT vs SOCKS curl:"

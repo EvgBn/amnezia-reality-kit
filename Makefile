@@ -1,7 +1,7 @@
 .PHONY: help extract-env network-plan build build-diff create-data route route-remove kmod-remove host-remove remove-full first-start check check-watch check-host check-deploy deploy-host mtu \
         start up down ps logs images images-ipt2socks images-pull-upstream recreate refresh-full validate \
         unit-test unit-test-shell unit-test-integration test-go test-one test verify-inbound verify-mtproxy verify-mtproxy-smoke verify-sni-443 regression-443 \
-        smoke-voice-chat voice-smoke-report voice-path-probe voice-fail-snapshot incident-snapshot incident-metrics-tick diagnose-udp-path diagnose-udp-path-watch voice-gate \
+        smoke-voice-chat voice-smoke-report voice-path-probe voice-fail-snapshot incident-snapshot incident-metrics-tick incident-metrics-cron-install incident-channel-report diagnose-udp-path diagnose-udp-path-watch voice-gate \
         awg-client-add awg-client-remove awg-client-list mtproxy-export mtproxy-list mtproxy-rotate-secret \
         mtproxy-link mtproxy-link-list
 
@@ -330,12 +330,23 @@ voice-fail-snapshot:
 
 incident-snapshot:
 	@chmod +x scripts/incident/collect-snapshot.sh scripts/incident/metrics-tick.sh \
-		scripts/lib/incident-udp-log-patterns.sh scripts/lib/incident-snapshot-lib.sh
+		scripts/lib/incident-udp-log-patterns.sh scripts/lib/incident-snapshot-lib.sh \
+		scripts/lib/incident-channel-lib.sh
 	./scripts/incident/collect-snapshot.sh
 
 incident-metrics-tick:
-	@chmod +x scripts/incident/metrics-tick.sh scripts/lib/incident-snapshot-lib.sh
+	@chmod +x scripts/incident/metrics-tick.sh scripts/lib/incident-snapshot-lib.sh \
+		scripts/lib/incident-channel-lib.sh scripts/lib/incident-metrics-collect-lib.sh
 	./scripts/incident/metrics-tick.sh
+
+incident-channel-report:
+	@chmod +x scripts/incident/channel-report.sh scripts/lib/incident-channel-lib.sh \
+		scripts/lib/incident-channel-report-lib.sh
+	./scripts/incident/channel-report.sh
+
+incident-metrics-cron-install:
+	@chmod +x scripts/incident/install-metrics-cron.sh
+	./scripts/incident/install-metrics-cron.sh
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 help:
@@ -344,7 +355,7 @@ help:
 	  printf '  %s%-42s %s\n' "$$_pfx" "$$2" "$$3"; \
 	}; \
 	echo 'AmneziaWG + Xray REALITY — operator commands (run from repo root)'; \
-	echo 'Guides: docs/DEPLOYMENT.md  docs/CHECK.md  docs/FAQ.md'; \
+	echo 'Guides: docs/DEPLOYMENT.md  docs/CHECK.md  docs/FAQ.md  scripts/incident/README.md (RCA)'; \
 	echo ''; \
 	echo '━━━ New server — do these once, in order ━━━'; \
 	echo '  0. Install Docker if needed:  sudo ./scripts/setup/install-docker.sh'; \
@@ -434,5 +445,23 @@ help:
 	h '' 'make voice-smoke-report' 'Full metrics + logs (alias: smoke-voice-chat)'; \
 	h '' 'make voice-path-probe' 'Diagnose after voice-gate FAIL'; \
 	h '' 'make voice-fail-snapshot' 'Capture state before refresh-full'; \
-	h '' 'make incident-snapshot' 'Full incident bundle → ~/log/snapshots'; \
-	echo '  Automation: NONINTERACTIVE=1 SMOKE_CLIENT_IP=10.8.0.x make voice-gate'
+	echo '  Automation: NONINTERACTIVE=1 SMOKE_CLIENT_IP=10.8.0.x make voice-gate'; \
+	echo ''; \
+	echo '━━━ Incident / RCA (extreme cases — IN host outage) ━━━'; \
+	echo '  Guide: scripts/incident/README.md'; \
+	echo '  Do NOT make recreate / refresh-full before capturing state.'; \
+	echo ''; \
+	echo '  Once per machine (background time-series):'; \
+	h '' 'make incident-metrics-cron-install' 'User crontab: metrics-tick every 2 min'; \
+	h '' 'make incident-metrics-tick' 'One manual tick → ~/log/metrics + ~/log/events'; \
+	echo ''; \
+	echo '  While symptoms are visible (run first):'; \
+	h '' 'make incident-snapshot' 'Forensic bundle → ~/log/snapshots (+ metrics tail, verdict v2)'; \
+	h '' 'CLIENT_IP=10.8.0.9 make incident-snapshot' 'Snapshot for another AWG client'; \
+	echo '  Telegram hang / voice / UDP — also before any refresh:'; \
+	h '' 'make voice-fail-snapshot' 'Deeper UDP capture (voice section above)'; \
+	echo ''; \
+	echo '  After the incident (DATE=YYYY-MM-DD optional):'; \
+	h '' 'make incident-channel-report' 'Markdown draft: metrics CSV + events.jsonl'; \
+	echo '  OUT=~/log/reports/rca-DATE.md make incident-channel-report'; \
+	echo '  Copy off-box: ~/log/snapshots/  ~/log/metrics/  ~/log/events/'

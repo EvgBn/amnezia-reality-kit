@@ -50,6 +50,22 @@ incident_swap_used_mb() {
 }
 
 # OUT TCP connect probe from xray netns (best-effort).
+incident_peer_transfer_totals() {
+  local awg="$1" client_ip="$2"
+  local line
+  line="$(docker exec "${awg}" wg show awg0 dump 2>/dev/null \
+    | awk -F'\t' -v ip="${client_ip}" '
+      NR > 1 && $4 != "" {
+        a = $4; sub(/,.*/, "", a); sub(/\/.*$/, "", a)
+        if (a == ip) { print $6, $7; exit }
+      }')"
+  if [[ -n "${line}" ]]; then
+    echo "${line}"
+  else
+    echo "0 0"
+  fi
+}
+
 incident_xray_tcp_probe() {
   local xray="$1" host="$2" port="${3:-443}"
   docker exec "${xray}" sh -c "
